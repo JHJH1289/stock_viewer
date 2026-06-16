@@ -1,35 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-type ApiHealth = {
-  status: string
-  checkedAt: string
-}
-
-type IntegrationStatus = {
-  checkedAt: string
-  checks: IntegrationCheck[]
-}
-
-type IntegrationCheck = {
-  name: string
-  configured: boolean
-}
-
-type StockSnapshot = {
-  symbol: string
-  name: string
-  price: number
-  changePercent: number
-  market: string
-}
-
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api'
 
 function App() {
-  const [health, setHealth] = useState<ApiHealth | null>(null)
-  const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null)
-  const [stocks, setStocks] = useState<StockSnapshot[]>([])
+  const [health, setHealth] = useState(null)
+  const [integrations, setIntegrations] = useState(null)
+  const [stocks, setStocks] = useState([])
   const [error, setError] = useState('')
 
   useEffect(() => {
