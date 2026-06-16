@@ -28,7 +28,13 @@ function DashboardView({
   const topMovers = useMemo(() => getTopMovers(stocks), [stocks])
   const marketSummary = useMemo(() => getMarketSummary(stocks), [stocks])
   const { configuredCount, integrationCount } = getIntegrationCount(integrations)
-  const { results: searchResults, isSearching, searchError } = useStockSearch(query)
+  const {
+    results: searchResults,
+    quotes: searchQuotes,
+    isSearching,
+    isLoadingQuotes,
+    searchError,
+  } = useStockSearch(query)
 
   return (
     <main className="app-shell">
@@ -52,7 +58,9 @@ function DashboardView({
       <StockSearchResults
         query={query}
         results={searchResults}
+        quotes={searchQuotes}
         isSearching={isSearching}
+        isLoadingQuotes={isLoadingQuotes}
         error={searchError}
       />
       <QuoteTable stocks={filteredStocks} lastUpdated={lastUpdated} />

@@ -270,7 +270,7 @@
 .master-header,
 .master-row {
   display: grid;
-  grid-template-columns: 0.7fr minmax(220px, 1.5fr) 0.55fr 0.8fr 0.65fr 0.8fr;
+  grid-template-columns: minmax(220px, 1.5fr) 0.7fr 0.8fr 0.8fr 0.55fr 0.8fr 0.65fr 0.8fr;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -291,7 +291,7 @@
   color: var(--heading);
 }
 
-.master-row span {
+.master-row > span {
   color: var(--muted);
   font-size: 14px;
 }

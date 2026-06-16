@@ -32,3 +32,26 @@ export async function searchStockMaster(keyword, limit = 20) {
 
   return response.json()
 }
+
+export async function fetchStockQuotes(stocks) {
+  const response = await fetch(`${apiBaseUrl}/stocks/quotes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(
+      stocks.map((stock) => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        country: stock.country,
+        exchange: stock.exchange,
+      })),
+    ),
+  })
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock quotes.')
+  }
+
+  return response.json()
+}
