@@ -6,6 +6,16 @@ type ApiHealth = {
   checkedAt: string
 }
 
+type IntegrationStatus = {
+  checkedAt: string
+  checks: IntegrationCheck[]
+}
+
+type IntegrationCheck = {
+  name: string
+  configured: boolean
+}
+
 type StockSnapshot = {
   symbol: string
   name: string
@@ -18,26 +28,29 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/a
 
 function App() {
   const [health, setHealth] = useState<ApiHealth | null>(null)
+  const [integrations, setIntegrations] = useState<IntegrationStatus | null>(null)
   const [stocks, setStocks] = useState<StockSnapshot[]>([])
   const [error, setError] = useState('')
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [healthResponse, stocksResponse] = await Promise.all([
+        const [healthResponse, integrationResponse, stocksResponse] = await Promise.all([
           fetch(`${apiBaseUrl}/health`),
+          fetch(`${apiBaseUrl}/integrations/status`),
           fetch(`${apiBaseUrl}/stocks/watchlist`),
         ])
 
-        if (!healthResponse.ok || !stocksResponse.ok) {
-          throw new Error('API 응답을 확인할 수 없습니다.')
+        if (!healthResponse.ok || !integrationResponse.ok || !stocksResponse.ok) {
+          throw new Error('API response check failed.')
         }
 
         setHealth(await healthResponse.json())
+        setIntegrations(await integrationResponse.json())
         setStocks(await stocksResponse.json())
         setError('')
       } catch (err) {
-        setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.')
+        setError(err instanceof Error ? err.message : 'Unknown error occurred.')
       }
     }
 
@@ -45,47 +58,71 @@ function App() {
   }, [])
 
   const marketTone = useMemo(() => {
-    if (stocks.length === 0) return '대기'
+    if (stocks.length === 0) return 'Waiting'
     const gainers = stocks.filter((stock) => stock.changePercent >= 0).length
-    return gainers >= stocks.length / 2 ? '상승 우세' : '하락 우세'
+    return gainers >= stocks.length / 2 ? 'Mostly Up' : 'Mostly Down'
   }, [stocks])
+
+  const configuredCount = integrations?.checks.filter((check) => check.configured).length ?? 0
+  const integrationCount = integrations?.checks.length ?? 0
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <div>
           <p className="eyebrow">Stock Viewer</p>
-          <h1>관심 종목 모니터링</h1>
+          <h1>Market Monitoring</h1>
         </div>
         <div className="status-pill" aria-live="polite">
           <span className={health?.status === 'UP' ? 'status-dot is-up' : 'status-dot'} />
-          API {health?.status ?? '확인 중'}
+          API {health?.status ?? 'Checking'}
         </div>
       </header>
 
-      <section className="summary-grid" aria-label="시장 요약">
+      <section className="summary-grid" aria-label="Dashboard summary">
         <article>
-          <span>시장 분위기</span>
+          <span>Market Tone</span>
           <strong>{marketTone}</strong>
         </article>
         <article>
-          <span>관심 종목</span>
+          <span>Watchlist</span>
           <strong>{stocks.length}</strong>
         </article>
         <article>
-          <span>최근 확인</span>
-          <strong>{health ? new Date(health.checkedAt).toLocaleTimeString() : '-'}</strong>
+          <span>API Keys</span>
+          <strong>
+            {configuredCount}/{integrationCount || '-'}
+          </strong>
         </article>
       </section>
 
       {error ? <p className="error-message">{error}</p> : null}
 
-      <section className="watchlist" aria-label="관심 종목 목록">
+      <section className="integration-panel" aria-label="Integration key status">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Backend Env</p>
+            <h2>Key Load Check</h2>
+          </div>
+          <span>{integrations ? new Date(integrations.checkedAt).toLocaleTimeString() : '-'}</span>
+        </div>
+        <div className="integration-list">
+          {integrations?.checks.map((check) => (
+            <div className="integration-row" key={check.name}>
+              <span className={check.configured ? 'status-dot is-up' : 'status-dot'} />
+              <strong>{check.name}</strong>
+              <span>{check.configured ? 'Loaded' : 'Missing'}</span>
+            </div>
+          )) ?? <p className="empty-message">Checking backend env keys...</p>}
+        </div>
+      </section>
+
+      <section className="watchlist" aria-label="Watchlist">
         <div className="table-header">
-          <span>종목</span>
-          <span>시장</span>
-          <span>가격</span>
-          <span>등락률</span>
+          <span>Symbol</span>
+          <span>Market</span>
+          <span>Price</span>
+          <span>Change</span>
         </div>
         {stocks.map((stock) => (
           <div className="stock-row" key={stock.symbol}>
