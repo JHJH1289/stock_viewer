@@ -66,6 +66,29 @@ GET /api/stocks/search?keyword=AAPL&limit=20
 GET /api/stocks/master/summary
 ```
 
+Live quote API:
+
+```text
+GET /api/stocks/watchlist
+```
+
+Current watchlist quotes are loaded from Korea Investment Open API for Korean stocks. The backend caches watchlist quote responses briefly to avoid excessive API calls and token reissue limits.
+
+Current watchlist:
+
+```text
+005930 Samsung Electronics
+000660 SK hynix
+AAPL Apple
+MSFT Microsoft
+NVDA NVIDIA
+GOOGL Alphabet
+SPCX SpaceX
+SPY S&P 500 ETF
+```
+
+`SPY` is used as the tradable S&P 500 proxy.
+
 Current generated dataset size:
 
 ```text

@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import AppHeader from './AppHeader'
 import MarketControls from './MarketControls'
 import QuoteTable from './QuoteTable'
+import StockSearchResults from './StockSearchResults'
 import SummaryGrid from './SummaryGrid'
 import TickerStrip from './TickerStrip'
+import { useStockSearch } from '../hooks/useStockSearch'
 import { filterStocks, getIntegrationCount, getMarketSummary, getTopMovers } from '../utils/market'
 
 function DashboardView({
@@ -26,6 +28,7 @@ function DashboardView({
   const topMovers = useMemo(() => getTopMovers(stocks), [stocks])
   const marketSummary = useMemo(() => getMarketSummary(stocks), [stocks])
   const { configuredCount, integrationCount } = getIntegrationCount(integrations)
+  const { results: searchResults, isSearching, searchError } = useStockSearch(query)
 
   return (
     <main className="app-shell">
@@ -46,6 +49,12 @@ function DashboardView({
         onRefreshSecondsChange={onRefreshSecondsChange}
       />
       {error ? <p className="error-message">{error}</p> : null}
+      <StockSearchResults
+        query={query}
+        results={searchResults}
+        isSearching={isSearching}
+        error={searchError}
+      />
       <QuoteTable stocks={filteredStocks} lastUpdated={lastUpdated} />
     </main>
   )

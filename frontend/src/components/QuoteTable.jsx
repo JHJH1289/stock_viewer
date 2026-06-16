@@ -1,5 +1,6 @@
 import ChangeBadge from './ChangeBadge'
 import PriceSparkline from './PriceSparkline'
+import { formatPrice, getPrimaryStockLabel, getSecondaryStockLabel } from '../utils/market'
 
 function QuoteTable({ stocks, lastUpdated }) {
   return (
@@ -24,11 +25,11 @@ function QuoteTable({ stocks, lastUpdated }) {
         {stocks.map((stock) => (
           <div className="quote-row" key={stock.symbol}>
             <div className="symbol-cell">
-              <strong>{stock.symbol}</strong>
-              <span>{stock.name}</span>
+              <strong>{getPrimaryStockLabel(stock)}</strong>
+              <span>{getSecondaryStockLabel(stock)}</span>
             </div>
             <span>{stock.market}</span>
-            <strong>${stock.price.toFixed(2)}</strong>
+            <strong>{formatPrice(stock.price, stock.currency)}</strong>
             <ChangeBadge value={stock.changePercent} />
             <PriceSparkline changePercent={stock.changePercent} symbol={stock.symbol} compact />
           </div>

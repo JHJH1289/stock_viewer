@@ -1,5 +1,6 @@
 import ChangeBadge from './ChangeBadge'
 import PriceSparkline from './PriceSparkline'
+import { formatPrice, getPrimaryStockLabel, getSecondaryStockLabel } from '../utils/market'
 
 function TickerStrip({ stocks }) {
   return (
@@ -7,12 +8,12 @@ function TickerStrip({ stocks }) {
       {stocks.map((stock) => (
         <article className="ticker-card" key={stock.symbol}>
           <div>
-            <strong>{stock.symbol}</strong>
-            <span>{stock.name}</span>
+            <strong>{getPrimaryStockLabel(stock)}</strong>
+            <span>{getSecondaryStockLabel(stock)}</span>
           </div>
           <PriceSparkline changePercent={stock.changePercent} symbol={stock.symbol} />
           <div className="ticker-price">
-            <strong>${stock.price.toFixed(2)}</strong>
+            <strong>{formatPrice(stock.price, stock.currency)}</strong>
             <ChangeBadge value={stock.changePercent} />
           </div>
         </article>

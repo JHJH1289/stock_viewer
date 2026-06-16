@@ -48,3 +48,21 @@ export function getIntegrationCount(integrations) {
 export function formatPercent(value) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }
+
+export function formatPrice(value, currency = 'USD') {
+  const locale = currency === 'KRW' ? 'ko-KR' : 'en-US'
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: currency === 'KRW' ? 0 : 2,
+  }).format(value)
+}
+
+export function getPrimaryStockLabel(stock) {
+  return stock.name
+}
+
+export function getSecondaryStockLabel(stock) {
+  return stock.symbol
+}

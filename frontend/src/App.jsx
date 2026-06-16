@@ -3,12 +3,12 @@ import DashboardView from './components/DashboardView'
 import MarketDataLoader from './components/MarketDataLoader'
 import './App.css'
 
-const refreshOptions = [5, 10, 30]
+const refreshOptions = [30, 60, 120]
 
 function App() {
   const [query, setQuery] = useState('')
   const [direction, setDirection] = useState('all')
-  const [refreshSeconds, setRefreshSeconds] = useState(5)
+  const [refreshSeconds, setRefreshSeconds] = useState(30)
 
   return (
     <MarketDataLoader refreshSeconds={refreshSeconds}>

@@ -16,10 +16,12 @@ src/
     MarketDataLoader.jsx
     PriceSparkline.jsx
     QuoteTable.jsx
+    StockSearchResults.jsx
     SummaryGrid.jsx
     TickerStrip.jsx
   hooks/
     useMarketDashboard.js
+    useStockSearch.js
   services/
     stockApi.js
   utils/
@@ -32,8 +34,10 @@ src/
 - `useMarketDashboard`: API health, 외부 연동 키 상태, 관심 종목 데이터를 관리합니다.
 - `PriceSparkline`: 종목별 미니 그래프를 렌더링합니다.
 - `QuoteTable`: 관심 종목 시세 테이블을 표시합니다.
+- `StockSearchResults`: 검색어로 조회한 주식 마스터 결과를 표시합니다.
 - `TickerStrip`: 변동폭이 큰 주요 종목 카드를 표시합니다.
 - `MarketControls`: 검색, 상승/하락 필터, 갱신 주기 선택 UI입니다.
+- `useStockSearch`: 검색어가 바뀔 때 백엔드 주식 마스터 검색 API를 호출합니다.
 - `market.js`: 종목 필터링, 요약 계산, 퍼센트 포맷을 담당합니다.
 
 ## Stock Search API
