@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Repository;
@@ -68,6 +69,18 @@ public class CsvStockMasterRepository implements StockMasterRepository {
                 .sorted(Comparator.comparingInt(stock -> score(stock, normalizedKeyword)))
                 .limit(limit)
                 .toList();
+    }
+
+    @Override
+    public Optional<StockMaster> findBySymbol(String symbol) {
+        String normalizedSymbol = symbol == null ? "" : symbol.trim().toUpperCase(Locale.ROOT);
+        if (normalizedSymbol.isBlank()) {
+            return Optional.empty();
+        }
+
+        return stocks.stream()
+                .filter(stock -> stock.symbol().equalsIgnoreCase(normalizedSymbol))
+                .findFirst();
     }
 
     @Override

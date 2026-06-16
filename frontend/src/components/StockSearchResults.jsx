@@ -1,4 +1,5 @@
 import ChangeBadge from './ChangeBadge'
+import StockLink from './StockLink'
 import { formatPrice } from '../utils/market'
 
 function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuotes, error }) {
@@ -35,7 +36,9 @@ function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuot
 
           return (
             <div className="master-row" key={`${stock.country}-${stock.symbol}`}>
-              <strong>{stock.name}</strong>
+              <StockLink className="stock-text-link" symbol={stock.symbol}>
+                <strong>{stock.name}</strong>
+              </StockLink>
               <span>{stock.symbol}</span>
               <span>{quote ? formatPrice(quote.price, quote.currency) : isLoadingQuotes ? 'Loading' : '-'}</span>
               <span>{quote ? <ChangeBadge value={quote.changePercent} /> : '-'}</span>

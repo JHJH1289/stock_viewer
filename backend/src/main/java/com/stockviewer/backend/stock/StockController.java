@@ -9,12 +9,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stockviewer.backend.kis.KisQuoteService;
+import com.stockviewer.backend.stockmaster.StockMaster;
+import com.stockviewer.backend.stockmaster.StockMasterRepository;
 
 @RestController
 @RequestMapping("/api")
@@ -24,12 +27,14 @@ public class StockController {
     private static final int MAX_QUOTE_REQUEST_SIZE = 10;
 
     private final KisQuoteService kisQuoteService;
+    private final StockMasterRepository stockMasterRepository;
     private List<StockSnapshot> cachedWatchlist = List.of();
     private Instant cachedWatchlistAt = Instant.EPOCH;
     private final Map<String, CachedQuote> quoteCache = new ConcurrentHashMap<>();
 
-    public StockController(KisQuoteService kisQuoteService) {
+    public StockController(KisQuoteService kisQuoteService, StockMasterRepository stockMasterRepository) {
         this.kisQuoteService = kisQuoteService;
+        this.stockMasterRepository = stockMasterRepository;
     }
 
     @GetMapping("/health")
@@ -71,6 +76,21 @@ public class StockController {
                 .map(this::getCachedQuote)
                 .flatMap(List::stream)
                 .toList();
+    }
+
+    @GetMapping("/stocks/quote/{symbol}")
+    public StockSnapshot quote(@PathVariable String symbol) {
+        StockMaster stock = stockMasterRepository.findBySymbol(symbol)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
+
+        return getCachedQuote(new StockQuoteRequest(
+                stock.symbol(),
+                stock.name(),
+                stock.country(),
+                stock.exchange()))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Quote is not available for symbol: " + symbol));
     }
 
     public record ApiHealth(String status, Instant checkedAt) {

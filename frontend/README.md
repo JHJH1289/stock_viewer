@@ -12,11 +12,14 @@ src/
     AppHeader.jsx
     ChangeBadge.jsx
     DashboardView.jsx
+    DetailPriceChart.jsx
     IntegrationStatusList.jsx
     MarketControls.jsx
     MarketDataLoader.jsx
     PriceSparkline.jsx
     QuoteTable.jsx
+    StockDetailPage.jsx
+    StockLink.jsx
     StockSearchResults.jsx
     TickerStrip.jsx
   hooks/
@@ -61,6 +64,18 @@ src/
 ### `StockSearchResults.jsx`
 
 검색 결과 테이블입니다. `stock_master.csv` 기반 검색 결과를 표시하고, 검색 결과에 포함된 종목만 별도로 가격 조회한 값을 함께 보여줍니다. 컬럼은 `Name`, `Symbol`, `Price`, `Change`, `Country`, `Exchange`, `Currency`, `Corp Code` 순서입니다. 굵은 표시는 `Name`에 적용합니다.
+
+### `StockDetailPage.jsx`
+
+개별 종목 상세 화면입니다. 라우트는 `/{종목코드}` 형식이며, 예를 들면 `/005930`, `/AAPL`입니다. URL의 종목코드로 백엔드 단건 quote API를 호출하고 현재가, 등락률, 시장, 통화, 세부 그래프를 표시합니다.
+
+### `DetailPriceChart.jsx`
+
+상세 페이지 전용 큰 캔들 차트입니다. 현재는 단건 quote의 현재가와 등락률을 기반으로 OHLC 형태의 캔들, 거래량 막대, MA 5/MA 10 이동평균선을 생성합니다. 추후 실제 일봉/분봉 API가 붙으면 이 컴포넌트가 실제 시계열 배열을 받아 그리도록 확장하면 됩니다.
+
+### `StockLink.jsx`
+
+종목 상세 페이지로 이동하는 공통 링크 컴포넌트입니다. 회사명 텍스트, 종목코드, 그래프 등 클릭 가능한 요소가 동일한 라우팅 규칙을 사용하도록 감쌉니다.
 
 ### `QuoteTable.jsx`
 
@@ -121,6 +136,7 @@ fetchStockQuotes(stocks)
 ```text
 GET /api/stocks/search?keyword=삼성&limit=20
 POST /api/stocks/quotes
+GET /api/stocks/quote/{symbol}
 ```
 
 검색 응답 필드:

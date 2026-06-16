@@ -55,3 +55,13 @@ export async function fetchStockQuotes(stocks) {
 
   return response.json()
 }
+
+export async function fetchStockQuote(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/quote/${encodeURIComponent(symbol)}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock quote.')
+  }
+
+  return response.json()
+}
