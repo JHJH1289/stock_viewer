@@ -2,7 +2,6 @@ package com.stockviewer.backend.stock;
 
 import java.time.Instant;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +47,10 @@ public class StockController {
             return cachedWatchlist;
         }
 
+        if (!kisQuoteService.isConfigured()) {
+            return List.of();
+        }
+
         StockSnapshot samsung = kisQuoteService.getDomesticQuote("005930", "\uC0BC\uC131\uC804\uC790");
         pauseBetweenQuoteCalls();
         StockSnapshot skHynix = kisQuoteService.getDomesticQuote("000660", "SK\uD558\uC774\uB2C9\uC2A4");
@@ -79,7 +82,7 @@ public class StockController {
     }
 
     @GetMapping("/stocks/quote/{symbol}")
-    public StockSnapshot quote(@PathVariable String symbol) {
+    public StockSnapshot quote(@PathVariable("symbol") String symbol) {
         StockMaster stock = stockMasterRepository.findBySymbol(symbol)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
 

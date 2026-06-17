@@ -65,3 +65,31 @@ export async function fetchStockQuote(symbol) {
 
   return response.json()
 }
+
+export async function signup({ username, email, password }) {
+  const response = await fetch(`${apiBaseUrl}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message ?? '회원가입에 실패했습니다.')
+  }
+  return data
+}
+
+export async function login({ email, password }) {
+  const response = await fetch(`${apiBaseUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+
+  const data = await response.json()
+  if (!response.ok) {
+    throw new Error(data.message ?? '로그인에 실패했습니다.')
+  }
+  return data
+}

@@ -24,6 +24,10 @@ public class KisQuoteService {
         this.restClient = restClientBuilder.build();
     }
 
+    public boolean isConfigured() {
+        return properties.configured();
+    }
+
     public StockSnapshot getDomesticQuote(String symbol, String fallbackName) {
         if (!properties.configured()) {
             throw new IllegalStateException("KIS API properties are not configured.");
