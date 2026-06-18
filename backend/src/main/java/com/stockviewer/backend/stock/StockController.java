@@ -87,7 +87,7 @@ public class StockController {
     }
 
     @GetMapping("/stocks/quote/{symbol}")
-    public StockSnapshot quote(@PathVariable String symbol) {
+    public StockSnapshot quote(@PathVariable("symbol") String symbol) {
         StockMaster stock = stockMasterRepository.findBySymbol(symbol)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
 
@@ -103,8 +103,8 @@ public class StockController {
 
     @GetMapping("/stocks/history/{symbol}")
     public StockHistoryResponse history(
-            @PathVariable String symbol,
-            @RequestParam(defaultValue = "1mo") String range) {
+            @PathVariable("symbol") String symbol,
+            @RequestParam(name = "range", defaultValue = "1mo") String range) {
         StockMaster stock = stockMasterRepository.findBySymbol(symbol)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
 
