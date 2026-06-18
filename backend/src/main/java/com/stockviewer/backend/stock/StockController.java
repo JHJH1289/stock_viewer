@@ -108,10 +108,6 @@ public class StockController {
         StockMaster stock = stockMasterRepository.findBySymbol(symbol)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
 
-        if (!"KR".equals(normalize(stock.country()))) {
-            throw new IllegalArgumentException("History is currently supported for Korean stocks only.");
-        }
-
         String normalizedRange = normalizeRange(range);
         String cacheKey = normalize(stock.symbol()) + ":" + normalizedRange;
         CachedHistory cachedHistory = historyCache.get(cacheKey);
@@ -119,18 +115,12 @@ public class StockController {
             return cachedHistory.history();
         }
 
-        List<StockHistoryPoint> points = switch (normalizedRange) {
-            case "1d" -> toThirtyMinutePoints(kisQuoteService.getDomesticTodayMinuteHistory(stock.symbol()));
-            case "1mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusMonths(1), LocalDate.now());
-            case "6mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusMonths(6), LocalDate.now());
-            case "1y" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusYears(1), LocalDate.now());
-            default -> throw new IllegalArgumentException("Unsupported history range: " + range);
-        };
+        List<StockHistoryPoint> points = getHistoryPoints(stock, normalizedRange);
 
         StockHistoryResponse history = new StockHistoryResponse(
                 stock.symbol(),
                 normalizedRange,
-                "1d".equals(normalizedRange) ? "30m" : "1d",
+                "KR".equals(normalize(stock.country())) && "1d".equals(normalizedRange) ? "30m" : "1d",
                 stock.currency(),
                 points);
         historyCache.put(cacheKey, new CachedHistory(history, Instant.now()));
@@ -189,6 +179,34 @@ public class StockController {
         }
     }
 
+    private List<StockHistoryPoint> getHistoryPoints(StockMaster stock, String normalizedRange) {
+        LocalDate now = LocalDate.now();
+        String country = normalize(stock.country());
+
+        if ("KR".equals(country)) {
+            return switch (normalizedRange) {
+                case "1d" -> toThirtyMinutePoints(kisQuoteService.getDomesticTodayMinuteHistory(stock.symbol()));
+                case "1mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), now.minusMonths(1), now);
+                case "6mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), now.minusMonths(6), now);
+                case "1y" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), now.minusYears(1), now);
+                default -> throw new IllegalArgumentException("Unsupported history range: " + normalizedRange);
+            };
+        }
+
+        if ("US".equals(country)) {
+            String exchangeCode = toKisExchangeCode(stock.exchange());
+            return switch (normalizedRange) {
+                case "1d" -> kisQuoteService.getOverseasDailyHistory(stock.symbol(), exchangeCode, now.minusDays(7), now);
+                case "1mo" -> kisQuoteService.getOverseasDailyHistory(stock.symbol(), exchangeCode, now.minusMonths(1), now);
+                case "6mo" -> kisQuoteService.getOverseasDailyHistory(stock.symbol(), exchangeCode, now.minusMonths(6), now);
+                case "1y" -> kisQuoteService.getOverseasDailyHistory(stock.symbol(), exchangeCode, now.minusYears(1), now);
+                default -> throw new IllegalArgumentException("Unsupported history range: " + normalizedRange);
+            };
+        }
+
+        throw new IllegalArgumentException("Unsupported country: " + stock.country());
+    }
+
     private StockSnapshot getQuote(StockQuoteRequest request) {
         String country = normalize(request.country());
         String symbol = request.symbol();
@@ -210,7 +228,7 @@ public class StockController {
         return switch (normalize(exchange)) {
             case "NASDAQ" -> "NAS";
             case "NYSE" -> "NYS";
-            case "NYSE_AMERICAN", "NYSE_ARCA" -> "AMS";
+            case "NYSE_AMERICAN", "NYSE_ARCA", "CBOE_BZX", "BATS" -> "AMS";
             default -> throw new IllegalArgumentException("Unsupported US exchange: " + exchange);
         };
     }

@@ -72,13 +72,7 @@ function StockDetailPage() {
       } catch (err) {
         if (cancelled) return
         setHistory(null)
-        setHistoryError(
-          quote.currency === 'KRW'
-            ? err instanceof Error
-              ? err.message
-              : 'Unable to load stock history.'
-            : '\uD604\uC7AC \uD55C\uAD6D \uC8FC\uC2DD\uB9CC \uCC28\uD2B8 \uC870\uD68C\uB97C \uC9C0\uC6D0\uD569\uB2C8\uB2E4.',
-        )
+        setHistoryError(err instanceof Error ? err.message : '차트 데이터를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
           setIsHistoryLoading(false)

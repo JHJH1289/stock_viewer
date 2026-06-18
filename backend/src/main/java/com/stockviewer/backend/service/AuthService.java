@@ -24,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+    private static final BigDecimal INITIAL_KRW_BALANCE = new BigDecimal("10000000");
+    private static final BigDecimal INITIAL_USD_BALANCE = new BigDecimal("10000");
 
     private final UserRepository userRepository;
     private final BalanceRepository balanceRepository;
@@ -36,6 +38,7 @@ public class AuthService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
         }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -48,8 +51,8 @@ public class AuthService {
 
         balanceRepository.save(Balance.builder()
                 .userId(savedUser.getId())
-                .krwAmount(new BigDecimal("10000000"))
-                .usdAmount(BigDecimal.ZERO)
+                .krwAmount(INITIAL_KRW_BALANCE)
+                .usdAmount(INITIAL_USD_BALANCE)
                 .updatedAt(LocalDateTime.now())
                 .build());
 

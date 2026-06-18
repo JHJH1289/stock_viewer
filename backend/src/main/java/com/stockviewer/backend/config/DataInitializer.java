@@ -18,13 +18,16 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (marketRepository.count() > 0) return;
-
-        marketRepository.saveAll(List.of(
+        List<Market> defaultMarkets = List.of(
             Market.builder().marketCode("KRX").marketName("Korea Exchange").country("KOR").currency("KRW").build(),
             Market.builder().marketCode("NASDAQ").marketName("NASDAQ").country("USA").currency("USD").build(),
             Market.builder().marketCode("NYSE").marketName("New York Stock Exchange").country("USA").currency("USD").build(),
-            Market.builder().marketCode("NYSE_ARCA").marketName("NYSE Arca").country("USA").currency("USD").build()
-        ));
+            Market.builder().marketCode("NYSE_ARCA").marketName("NYSE Arca").country("USA").currency("USD").build(),
+            Market.builder().marketCode("CBOE_BZX").marketName("Cboe BZX").country("USA").currency("USD").build()
+        );
+
+        defaultMarkets.stream()
+                .filter(market -> !marketRepository.existsById(market.getMarketCode()))
+                .forEach(marketRepository::save);
     }
 }

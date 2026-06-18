@@ -3,19 +3,23 @@ import { fetchBalance, fetchHoldings, fetchTradeOrders } from '../services/stock
 import { formatPrice } from '../utils/market'
 
 function calcChange(holding, stocks) {
-  const live = stocks.find(s => s.symbol === holding.symbol)
+  const live = stocks.find(stock => stock.symbol === holding.symbol)
   if (!live || live.price == null) return null
+
   const avgBuy = Number(holding.avgBuyPrice)
   const qty = Number(holding.quantity)
   const amount = (live.price - avgBuy) * qty
   const pct = avgBuy > 0 ? ((live.price - avgBuy) / avgBuy) * 100 : 0
+
   return { currentPrice: live.price, amount, pct, currency: live.currency }
 }
 
 function ChangePill({ pct }) {
   if (pct == null) return <span className="holding-change is-neutral">-</span>
+
   const cls = pct > 0 ? 'is-positive' : pct < 0 ? 'is-negative' : 'is-neutral'
   const sign = pct > 0 ? '+' : ''
+
   return <span className={`holding-change ${cls}`}>{sign}{pct.toFixed(2)}%</span>
 }
 
@@ -29,18 +33,18 @@ function PortfolioPanel({ refreshKey, onSell, stocks = [] }) {
   useEffect(() => {
     fetchBalance()
       .then(data => { setBalance(data); setError('') })
-      .catch(e => setError(e.message))
+      .catch(err => setError(err.message))
     fetchHoldings().then(setHoldings).catch(() => {})
     fetchTradeOrders().then(setOrders).catch(() => {})
   }, [refreshKey])
 
-  const holdingsWithChange = holdings.map(h => ({
-    ...h,
-    change: calcChange(h, stocks),
+  const holdingsWithChange = holdings.map(holding => ({
+    ...holding,
+    change: calcChange(holding, stocks),
   }))
 
-  const totalPnl = holdingsWithChange.reduce((sum, h) => {
-    return h.change ? sum + h.change.amount : sum
+  const totalPnl = holdingsWithChange.reduce((sum, holding) => {
+    return holding.change ? sum + holding.change.amount : sum
   }, 0)
 
   return (
@@ -52,7 +56,7 @@ function PortfolioPanel({ refreshKey, onSell, stocks = [] }) {
         </div>
         {holdings.length > 0 && (
           <span className={`portfolio-total-pnl ${totalPnl >= 0 ? 'is-positive' : 'is-negative'}`}>
-            총 평가손익&nbsp;
+            총 평가 손익&nbsp;
             <strong>{totalPnl >= 0 ? '+' : ''}{totalPnl.toLocaleString('ko-KR', { maximumFractionDigits: 0 })}</strong>
           </span>
         )}
@@ -82,32 +86,32 @@ function PortfolioPanel({ refreshKey, onSell, stocks = [] }) {
               <span>수량</span>
               <span>평균 매수가</span>
               <span>현재가</span>
-              <span>평가손익</span>
+              <span>평가 손익</span>
               <span></span>
             </div>
-            {holdingsWithChange.map(h => {
-              const currency = h.marketCode === 'KRX' ? 'KRW' : 'USD'
+            {holdingsWithChange.map(holding => {
+              const currency = holding.marketCode === 'KRX' ? 'KRW' : 'USD'
               return (
-                <div className="portfolio-row holding-cols" key={h.symbol}>
+                <div className="portfolio-row holding-cols" key={holding.symbol}>
                   <div className="holding-name">
-                    <strong>{h.symbol}</strong>
-                    <span>{h.stockName}</span>
+                    <strong>{holding.symbol}</strong>
+                    <span>{holding.stockName}</span>
                   </div>
-                  <span>{Number(h.quantity).toLocaleString()}</span>
-                  <span>{formatPrice(h.avgBuyPrice, currency)}</span>
+                  <span>{Number(holding.quantity).toLocaleString()}</span>
+                  <span>{formatPrice(holding.avgBuyPrice, currency)}</span>
                   <div className="holding-price-cell">
-                    <span>{h.change ? formatPrice(h.change.currentPrice, currency) : '-'}</span>
-                    <ChangePill pct={h.change?.pct} />
+                    <span>{holding.change ? formatPrice(holding.change.currentPrice, currency) : '-'}</span>
+                    <ChangePill pct={holding.change?.pct} />
                   </div>
                   <div className="holding-pnl-cell">
-                    {h.change ? (
-                      <span className={h.change.amount >= 0 ? 'pnl-positive' : 'pnl-negative'}>
-                        {h.change.amount >= 0 ? '+' : ''}
-                        {formatPrice(h.change.amount, h.change.currency)}
+                    {holding.change ? (
+                      <span className={holding.change.amount >= 0 ? 'pnl-positive' : 'pnl-negative'}>
+                        {holding.change.amount >= 0 ? '+' : ''}
+                        {formatPrice(holding.change.amount, holding.change.currency)}
                       </span>
                     ) : <span className="holding-change is-neutral">-</span>}
                   </div>
-                  <button className="trade-action-btn sell-btn" type="button" onClick={() => onSell(h)}>
+                  <button className="trade-action-btn sell-btn" type="button" onClick={() => onSell(holding)}>
                     매도
                   </button>
                 </div>
@@ -118,8 +122,8 @@ function PortfolioPanel({ refreshKey, onSell, stocks = [] }) {
       </div>
 
       <div className="portfolio-section">
-        <button className="orders-toggle" type="button" onClick={() => setShowOrders(v => !v)}>
-          거래 내역 ({orders.length}건) {showOrders ? '▲' : '▼'}
+        <button className="orders-toggle" type="button" onClick={() => setShowOrders(value => !value)}>
+          거래 내역 ({orders.length}건) {showOrders ? '접기' : '보기'}
         </button>
         {showOrders && (
           orders.length === 0 ? (
@@ -134,16 +138,16 @@ function PortfolioPanel({ refreshKey, onSell, stocks = [] }) {
                 <span>총액</span>
                 <span>일시</span>
               </div>
-              {orders.map(o => (
-                <div className="portfolio-row order-cols" key={o.orderId}>
-                  <span>{o.symbol}</span>
-                  <span className={o.orderType === 'BUY' ? 'order-type-buy' : 'order-type-sell'}>
-                    {o.orderType === 'BUY' ? '매수' : '매도'}
+              {orders.map(order => (
+                <div className="portfolio-row order-cols" key={order.orderId}>
+                  <span>{order.symbol}</span>
+                  <span className={order.orderType === 'BUY' ? 'order-type-buy' : 'order-type-sell'}>
+                    {order.orderType === 'BUY' ? '매수' : '매도'}
                   </span>
-                  <span>{Number(o.quantity).toLocaleString()}</span>
-                  <span>{formatPrice(o.price, o.currency)}</span>
-                  <span>{formatPrice(o.totalAmount, o.currency)}</span>
-                  <span>{new Date(o.createdAt).toLocaleString('ko-KR')}</span>
+                  <span>{Number(order.quantity).toLocaleString()}</span>
+                  <span>{formatPrice(order.price, order.currency)}</span>
+                  <span>{formatPrice(order.totalAmount, order.currency)}</span>
+                  <span>{new Date(order.createdAt).toLocaleString('ko-KR')}</span>
                 </div>
               ))}
             </div>

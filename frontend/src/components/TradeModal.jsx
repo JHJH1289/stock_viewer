@@ -3,11 +3,15 @@ import { buyStock, fetchBalance, sellStock } from '../services/stockApi'
 import { formatPrice } from '../utils/market'
 
 const MARKET_CODE_MAP = {
-  'KRX': 'KRX',
-  'NASDAQ': 'NASDAQ',
-  'NYSE': 'NYSE',
+  KRX: 'KRX',
+  NASDAQ: 'NASDAQ',
+  NYSE: 'NYSE',
   'NYSE ARCA': 'NYSE_ARCA',
+  NYSE_ARCA: 'NYSE_ARCA',
   'NYSE AMERICAN': 'NYSE_ARCA',
+  NYSE_AMERICAN: 'NYSE_ARCA',
+  'CBOE BZX': 'CBOE_BZX',
+  CBOE_BZX: 'CBOE_BZX',
 }
 
 function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
@@ -17,7 +21,7 @@ function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const price = stock.price
+  const price = Number(stock.price)
   const currency = stock.currency
   const marketCode = MARKET_CODE_MAP[stock.market] ?? stock.market
   const total = price * quantity
@@ -31,20 +35,25 @@ function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
   }, [])
 
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    const handleKey = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     setError('')
     setIsLoading(true)
+
     try {
       if (mode === 'buy') {
         await buyStock({ symbol: stock.symbol, stockName: stock.name, marketCode, quantity, price })
@@ -62,13 +71,13 @@ function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" onClick={e => e.stopPropagation()}>
+      <div className="modal-card" onClick={event => event.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h2>{stock.name}</h2>
-            <span style={{ color: 'var(--muted)', fontSize: 13 }}>{stock.symbol} · {stock.market}</span>
+            <span style={{ color: 'var(--muted)', fontSize: 13 }}>{stock.symbol} / {stock.market}</span>
           </div>
-          <button className="modal-close" type="button" onClick={onClose} aria-label="닫기">✕</button>
+          <button className="modal-close" type="button" onClick={onClose} aria-label="닫기">x</button>
         </div>
 
         <div className="trade-mode-tabs">
@@ -76,12 +85,16 @@ function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
             type="button"
             className={`trade-tab buy-tab${mode === 'buy' ? ' is-active' : ''}`}
             onClick={() => { setMode('buy'); setError('') }}
-          >매수</button>
+          >
+            매수
+          </button>
           <button
             type="button"
             className={`trade-tab sell-tab${mode === 'sell' ? ' is-active' : ''}`}
             onClick={() => { setMode('sell'); setError('') }}
-          >매도</button>
+          >
+            매도
+          </button>
         </div>
 
         <form className="modal-form" onSubmit={handleSubmit}>
@@ -102,7 +115,7 @@ function TradeModal({ stock, mode: initialMode, onClose, onSuccess }) {
               type="number"
               min={1}
               value={quantity}
-              onChange={e => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={event => setQuantity(Math.max(1, parseInt(event.target.value, 10) || 1))}
               required
             />
           </label>

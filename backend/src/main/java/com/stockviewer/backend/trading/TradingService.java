@@ -27,6 +27,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class TradingService {
+    private static final BigDecimal INITIAL_KRW_BALANCE = new BigDecimal("10000000");
+    private static final BigDecimal INITIAL_USD_BALANCE = new BigDecimal("10000");
 
     private final BalanceRepository balanceRepository;
     private final HoldingRepository holdingRepository;
@@ -53,18 +55,20 @@ public class TradingService {
     @Transactional
     public TradeOrderDto buy(Long userId, BuyRequest req) {
         Market market = marketRepository.findById(req.getMarketCode())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓: " + req.getMarketCode()));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + req.getMarketCode()));
 
         BigDecimal total = req.getPrice().multiply(BigDecimal.valueOf(req.getQuantity()));
         Balance balance = getOrCreateBalance(userId);
 
         if ("KRW".equals(market.getCurrency())) {
-            if (balance.getKrwAmount().compareTo(total) < 0)
+            if (balance.getKrwAmount().compareTo(total) < 0) {
                 throw new IllegalStateException("KRW 잔고가 부족합니다.");
+            }
             balance.setKrwAmount(balance.getKrwAmount().subtract(total));
         } else {
-            if (balance.getUsdAmount().compareTo(total) < 0)
+            if (balance.getUsdAmount().compareTo(total) < 0) {
                 throw new IllegalStateException("USD 잔고가 부족합니다.");
+            }
             balance.setUsdAmount(balance.getUsdAmount().subtract(total));
         }
         balance.setUpdatedAt(LocalDateTime.now());
@@ -97,13 +101,14 @@ public class TradingService {
     @Transactional
     public TradeOrderDto sell(Long userId, SellRequest req) {
         Market market = marketRepository.findById(req.getMarketCode())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓: " + req.getMarketCode()));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + req.getMarketCode()));
 
         Holding holding = holdingRepository.findByUserIdAndSymbol(userId, req.getSymbol())
                 .orElseThrow(() -> new IllegalStateException("보유하지 않은 종목입니다."));
 
-        if (holding.getQuantity() < req.getQuantity())
+        if (holding.getQuantity() < req.getQuantity()) {
             throw new IllegalStateException("보유 수량이 부족합니다. (보유: " + holding.getQuantity() + ")");
+        }
 
         BigDecimal total = req.getPrice().multiply(BigDecimal.valueOf(req.getQuantity()));
         Balance balance = getOrCreateBalance(userId);
@@ -135,10 +140,13 @@ public class TradingService {
 
     public Balance getOrCreateBalance(Long userId) {
         return balanceRepository.findByUserId(userId).orElseGet(() -> {
-            Balance b = Balance.builder()
-                    .userId(userId).krwAmount(new BigDecimal("10000000"))
-                    .usdAmount(BigDecimal.ZERO).updatedAt(LocalDateTime.now()).build();
-            return balanceRepository.save(b);
+            Balance balance = Balance.builder()
+                    .userId(userId)
+                    .krwAmount(INITIAL_KRW_BALANCE)
+                    .usdAmount(INITIAL_USD_BALANCE)
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+            return balanceRepository.save(balance);
         });
     }
 }

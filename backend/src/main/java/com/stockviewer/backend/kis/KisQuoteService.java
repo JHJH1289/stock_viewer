@@ -22,6 +22,7 @@ public class KisQuoteService {
     private static final String DOMESTIC_DAILY_CHART_TR_ID = "FHKST03010100";
     private static final String DOMESTIC_TIME_CHART_TR_ID = "FHKST03010200";
     private static final String OVERSEAS_STOCK_TR_ID = "HHDFS00000300";
+    private static final String OVERSEAS_DAILY_PRICE_TR_ID = "HHDFS76240000";
     private static final DateTimeFormatter KIS_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
     private static final DateTimeFormatter KIS_TIME_FORMATTER = DateTimeFormatter.ofPattern("HHmmss");
 
@@ -232,6 +233,91 @@ public class KisQuoteService {
         return new StockSnapshot(symbol, fallbackName, price, changePercent, market, "USD");
     }
 
+    public List<StockHistoryPoint> getOverseasDailyHistory(
+            String symbol,
+            String exchangeCode,
+            LocalDate startDate,
+            LocalDate endDate) {
+        if (!properties.configured()) {
+            throw new IllegalStateException("KIS API properties are not configured.");
+        }
+
+        Map<String, StockHistoryPoint> pointsByTimestamp = new LinkedHashMap<>();
+        LocalDate pageEndDate = endDate;
+
+        while (!pageEndDate.isBefore(startDate) && pointsByTimestamp.size() < 380) {
+            List<StockHistoryPoint> page = fetchOverseasDailyHistoryPage(symbol, exchangeCode, pageEndDate);
+            if (page.isEmpty()) {
+                break;
+            }
+
+            for (StockHistoryPoint point : page) {
+                pointsByTimestamp.putIfAbsent(point.timestamp(), point);
+            }
+
+            String oldestTimestamp = page.stream()
+                    .map(StockHistoryPoint::timestamp)
+                    .min(String::compareTo)
+                    .orElse("");
+            if (oldestTimestamp.isBlank()) {
+                break;
+            }
+
+            LocalDate oldestDate = LocalDate.parse(oldestTimestamp);
+            if (!oldestDate.isAfter(startDate)) {
+                break;
+            }
+
+            pageEndDate = oldestDate.minusDays(1);
+            pauseBriefly();
+        }
+
+        return pointsByTimestamp.values().stream()
+                .filter(point -> !LocalDate.parse(point.timestamp()).isBefore(startDate))
+                .sorted(Comparator.comparing(StockHistoryPoint::timestamp))
+                .toList();
+    }
+
+    private List<StockHistoryPoint> fetchOverseasDailyHistoryPage(
+            String symbol,
+            String exchangeCode,
+            LocalDate endDate) {
+        JsonNode response = restClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .scheme(scheme())
+                        .host(host())
+                        .port(port())
+                        .path("/uapi/overseas-price/v1/quotations/dailyprice")
+                        .queryParam("AUTH", "")
+                        .queryParam("EXCD", exchangeCode)
+                        .queryParam("SYMB", symbol)
+                        .queryParam("GUBN", "0")
+                        .queryParam("BYMD", endDate.format(KIS_DATE_FORMATTER))
+                        .queryParam("MODP", "1")
+                        .build())
+                .header("authorization", "Bearer " + accessTokenService.getAccessToken())
+                .header("content-type", "application/json")
+                .header("appKey", properties.appKey())
+                .header("appSecret", properties.appSecret())
+                .header("tr_id", OVERSEAS_DAILY_PRICE_TR_ID)
+                .header("custtype", "P")
+                .retrieve()
+                .body(JsonNode.class);
+
+        validateKisResponse(response);
+
+        JsonNode output = response == null ? null : response.path("output2");
+        if (output == null || !output.isArray()) {
+            throw new IllegalStateException("KIS overseas daily price output was not returned.");
+        }
+
+        return stream(output)
+                .map(this::toOverseasDailyHistoryPoint)
+                .filter(point -> !point.timestamp().isBlank())
+                .sorted(Comparator.comparing(StockHistoryPoint::timestamp))
+                .toList();
+    }
+
     private void validateKisResponse(JsonNode response) {
         if (response == null) {
             throw new IllegalStateException("KIS response was empty.");
@@ -302,6 +388,18 @@ public class KisQuoteService {
                 parseLong(item.path("cntg_vol").asText()));
     }
 
+    private StockHistoryPoint toOverseasDailyHistoryPoint(JsonNode item) {
+        String date = item.path("xymd").asText();
+
+        return new StockHistoryPoint(
+                toIsoDate(date),
+                firstNumber(item, "open"),
+                firstNumber(item, "high"),
+                firstNumber(item, "low"),
+                firstNumber(item, "clos"),
+                parseLong(item.path("tvol").asText()));
+    }
+
     private String toIsoDate(String value) {
         if (value == null || value.length() != 8) {
             return value == null ? "" : value;
@@ -357,7 +455,10 @@ public class KisQuoteService {
             return 0;
         }
 
-        return Long.parseLong(value.replace(",", ""));
+        String normalized = value.replace(",", "");
+        return normalized.contains(".")
+                ? Math.round(Double.parseDouble(normalized))
+                : Long.parseLong(normalized);
     }
 
     private double firstNumber(JsonNode output, String... fieldNames) {
