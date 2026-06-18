@@ -15,7 +15,7 @@ import io.jsonwebtoken.security.Keys;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret:c3RvY2t2aWV3ZXItc2VjcmV0LWtleS1mb3Itand0LXRva2Vu}")
+    @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration-ms:86400000}")
