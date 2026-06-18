@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,8 +55,10 @@ public class TradingService {
 
     @Transactional
     public TradeOrderDto buy(Long userId, BuyRequest req) {
-        Market market = marketRepository.findById(req.getMarketCode())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + req.getMarketCode()));
+        String symbol = normalizeCode(req.getSymbol());
+        String marketCode = normalizeCode(req.getMarketCode());
+        Market market = marketRepository.findById(marketCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + marketCode));
 
         BigDecimal total = req.getPrice().multiply(BigDecimal.valueOf(req.getQuantity()));
         Balance balance = getOrCreateBalance(userId);
@@ -74,12 +77,17 @@ public class TradingService {
         balance.setUpdatedAt(LocalDateTime.now());
         balanceRepository.save(balance);
 
-        Holding holding = holdingRepository.findByUserIdAndSymbol(userId, req.getSymbol()).orElse(null);
+        Holding holding = holdingRepository.findByUserIdAndSymbolAndMarketCode(userId, symbol, marketCode).orElse(null);
         if (holding == null) {
             holding = Holding.builder()
-                    .userId(userId).symbol(req.getSymbol()).stockName(req.getStockName())
-                    .marketCode(req.getMarketCode()).quantity(req.getQuantity())
-                    .avgBuyPrice(req.getPrice()).updatedAt(LocalDateTime.now()).build();
+                    .userId(userId)
+                    .symbol(symbol)
+                    .stockName(req.getStockName())
+                    .marketCode(marketCode)
+                    .quantity(req.getQuantity())
+                    .avgBuyPrice(req.getPrice())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
         } else {
             BigDecimal prevTotal = holding.getAvgBuyPrice().multiply(BigDecimal.valueOf(holding.getQuantity()));
             long newQty = holding.getQuantity() + req.getQuantity();
@@ -91,19 +99,28 @@ public class TradingService {
         holdingRepository.save(holding);
 
         TradeOrder order = TradeOrder.builder()
-                .userId(userId).symbol(req.getSymbol()).stockName(req.getStockName())
-                .marketCode(req.getMarketCode()).orderType("BUY").quantity(req.getQuantity())
-                .price(req.getPrice()).totalAmount(total).currency(market.getCurrency())
-                .createdAt(LocalDateTime.now()).build();
+                .userId(userId)
+                .symbol(symbol)
+                .stockName(req.getStockName())
+                .marketCode(marketCode)
+                .orderType("BUY")
+                .quantity(req.getQuantity())
+                .price(req.getPrice())
+                .totalAmount(total)
+                .currency(market.getCurrency())
+                .createdAt(LocalDateTime.now())
+                .build();
         return TradeOrderDto.from(tradeOrderRepository.save(order));
     }
 
     @Transactional
     public TradeOrderDto sell(Long userId, SellRequest req) {
-        Market market = marketRepository.findById(req.getMarketCode())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + req.getMarketCode()));
+        String symbol = normalizeCode(req.getSymbol());
+        String marketCode = normalizeCode(req.getMarketCode());
+        Market market = marketRepository.findById(marketCode)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 마켓입니다: " + marketCode));
 
-        Holding holding = holdingRepository.findByUserIdAndSymbol(userId, req.getSymbol())
+        Holding holding = holdingRepository.findByUserIdAndSymbolAndMarketCode(userId, symbol, marketCode)
                 .orElseThrow(() -> new IllegalStateException("보유하지 않은 종목입니다."));
 
         if (holding.getQuantity() < req.getQuantity()) {
@@ -131,10 +148,17 @@ public class TradingService {
         }
 
         TradeOrder order = TradeOrder.builder()
-                .userId(userId).symbol(req.getSymbol()).stockName(holding.getStockName())
-                .marketCode(req.getMarketCode()).orderType("SELL").quantity(req.getQuantity())
-                .price(req.getPrice()).totalAmount(total).currency(market.getCurrency())
-                .createdAt(LocalDateTime.now()).build();
+                .userId(userId)
+                .symbol(symbol)
+                .stockName(holding.getStockName())
+                .marketCode(marketCode)
+                .orderType("SELL")
+                .quantity(req.getQuantity())
+                .price(req.getPrice())
+                .totalAmount(total)
+                .currency(market.getCurrency())
+                .createdAt(LocalDateTime.now())
+                .build();
         return TradeOrderDto.from(tradeOrderRepository.save(order));
     }
 
@@ -148,5 +172,9 @@ public class TradingService {
                     .build();
             return balanceRepository.save(balance);
         });
+    }
+
+    private String normalizeCode(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
     }
 }
