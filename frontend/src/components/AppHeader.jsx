@@ -1,3 +1,6 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+
 function AppHeader({
   health,
   isLoading,
@@ -9,6 +12,36 @@ function AppHeader({
   onSignupClick,
   onLogout,
 }) {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
+  function handleLogout() {
+    setIsUserMenuOpen(false)
+    onLogout()
+  }
+
   return (
     <header className="app-header">
       <div>
@@ -28,12 +61,27 @@ function AppHeader({
           <span className={isLoading ? 'refresh-symbol is-spinning' : 'refresh-symbol'} />
         </button>
         {currentUser ? (
-          <>
-            <span className="user-pill">{currentUser.username}</span>
-            <button className="auth-action" type="button" onClick={onLogout}>
-              로그아웃
+          <div className="user-menu" ref={userMenuRef}>
+            <button
+              className="user-menu-trigger"
+              type="button"
+              aria-expanded={isUserMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+            >
+              {currentUser.username}
             </button>
-          </>
+            {isUserMenuOpen ? (
+              <div className="user-menu-panel" role="menu">
+                <Link className="user-menu-item" to="/mypage" role="menuitem" onClick={() => setIsUserMenuOpen(false)}>
+                  마이 페이지
+                </Link>
+                <button className="user-menu-item" type="button" role="menuitem" onClick={handleLogout}>
+                  로그아웃
+                </button>
+              </div>
+            ) : null}
+          </div>
         ) : (
           <>
             <button className="auth-action" type="button" onClick={onLoginClick}>

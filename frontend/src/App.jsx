@@ -8,6 +8,7 @@ import QuoteTable from './components/QuoteTable'
 import StockSearchResults from './components/StockSearchResults'
 import StockDetailPage from './components/StockDetailPage'
 import TickerStrip from './components/TickerStrip'
+import MyPage from './components/MyPage'
 import { useMarketDashboard } from './hooks/useMarketDashboard'
 import { useStockSearch } from './hooks/useStockSearch'
 import { filterStocks, getTopMovers } from './utils/market'
@@ -34,6 +35,7 @@ function App() {
           />
         }
       />
+      <Route path="/mypage" element={<MyPage />} />
       <Route path="/:symbol" element={<StockDetailPage />} />
     </Routes>
   )
