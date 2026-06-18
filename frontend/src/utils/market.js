@@ -19,32 +19,6 @@ export function getTopMovers(stocks) {
     .slice(0, 3)
 }
 
-export function getMarketSummary(stocks) {
-  const gainers = stocks.filter((stock) => stock.changePercent >= 0).length
-  const losers = stocks.length - gainers
-  const averageMove =
-    stocks.length === 0
-      ? 0
-      : stocks.reduce((sum, stock) => sum + stock.changePercent, 0) / stocks.length
-
-  return {
-    gainers,
-    losers,
-    averageMove,
-    tone: gainers >= losers ? 'Mostly Up' : 'Mostly Down',
-  }
-}
-
-export function getIntegrationCount(integrations) {
-  const configuredCount = integrations?.checks.filter((check) => check.configured).length ?? 0
-  const integrationCount = integrations?.checks.length ?? 0
-
-  return {
-    configuredCount,
-    integrationCount,
-  }
-}
-
 export function formatPercent(value) {
   return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`
 }

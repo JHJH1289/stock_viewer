@@ -32,3 +32,85 @@ export async function searchStockMaster(keyword, limit = 20) {
 
   return response.json()
 }
+
+export async function fetchStockQuotes(stocks) {
+  const response = await fetch(`${apiBaseUrl}/stocks/quotes`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(
+      stocks.map((stock) => ({
+        symbol: stock.symbol,
+        name: stock.name,
+        country: stock.country,
+        exchange: stock.exchange,
+      })),
+    ),
+  })
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock quotes.')
+  }
+
+  return response.json()
+}
+
+export async function fetchStockQuote(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/quote/${encodeURIComponent(symbol)}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock quote.')
+  }
+
+  return response.json()
+}
+
+export async function fetchStockHistory(symbol, range = '1mo') {
+  const params = new URLSearchParams({ range })
+  const response = await fetch(`${apiBaseUrl}/stocks/history/${encodeURIComponent(symbol)}?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock history.')
+  }
+
+  return response.json()
+}
+
+export async function signup({ username, email, password }) {
+  const response = await fetch(`${apiBaseUrl}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '회원가입에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function login({ email, password }) {
+  const response = await fetch(`${apiBaseUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '로그인에 실패했습니다.')
+  }
+
+  return data
+}
+
+async function parseJsonResponse(response) {
+  try {
+    return await response.json()
+  } catch {
+    return {}
+  }
+}
