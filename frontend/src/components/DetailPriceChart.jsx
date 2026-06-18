@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import { formatPrice } from '../utils/market'
 
 const rangeOptions = [
-  { value: '1d', label: '\uC77C\uC77C' },
-  { value: '1mo', label: '1\uAC1C\uC6D4' },
-  { value: '6mo', label: '6\uAC1C\uC6D4' },
-  { value: '1y', label: '1\uB144' },
+  { value: '1d', label: '일일' },
+  { value: '1mo', label: '1개월' },
+  { value: '6mo', label: '6개월' },
+  { value: '1y', label: '1년' },
 ]
 
 function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChange }) {
@@ -39,13 +39,17 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
         ))}
       </div>
 
-      {isLoading ? <p className="detail-chart-state">\uCC28\uD2B8 \uB370\uC774\uD130 \uB85C\uB529 \uC911...</p> : null}
+      {isLoading ? (
+        <div className="detail-chart-loader">
+          <div className="spinner-chart" />
+        </div>
+      ) : null}
       {error ? <p className="detail-chart-state is-error">{error}</p> : null}
       {!isLoading && !error && chart.points.length === 0 ? (
-        <p className="detail-chart-state">\uD45C\uC2DC\uD560 \uCC28\uD2B8 \uB370\uC774\uD130\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4.</p>
+        <p className="detail-chart-state">표시할 차트 데이터가 없습니다.</p>
       ) : null}
 
-      {chart.points.length > 0 ? (
+      {!isLoading && chart.points.length > 0 ? (
         <>
           <svg
             className="detail-chart"
@@ -230,11 +234,11 @@ function createSummary(points, currency) {
   const volume = points.reduce((sum, point) => sum + point.volume, 0)
 
   return [
-    ['\uC2DC\uAC00', formatPrice(first.open || first.close, currency)],
-    ['\uACE0\uAC00', formatPrice(high, currency)],
-    ['\uC800\uAC00', formatPrice(low, currency)],
-    ['\uC885\uAC00', formatPrice(last.close, currency)],
-    ['\uAC70\uB798\uB7C9', volume.toLocaleString('ko-KR')],
+    ['시가', formatPrice(first.open || first.close, currency)],
+    ['고가', formatPrice(high, currency)],
+    ['저가', formatPrice(low, currency)],
+    ['종가', formatPrice(last.close, currency)],
+    ['거래량', volume.toLocaleString('ko-KR')],
   ].map(([label, value]) => ({ label, value }))
 }
 
@@ -264,7 +268,7 @@ function shortDate(timestamp) {
 
 function formatAxisPrice(value, currency) {
   if (currency === 'KRW') {
-    return `${Math.round(value / 10000).toLocaleString('ko-KR')}\uB9CC`
+    return `${Math.round(value / 10000).toLocaleString('ko-KR')}만`
   }
 
   return formatPrice(value, currency)

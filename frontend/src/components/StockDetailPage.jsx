@@ -40,7 +40,7 @@ function StockDetailPage() {
         setError('')
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Unable to load stock detail.')
+        setError(err instanceof Error ? err.message : '주식 정보를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
           setIsLoading(false)
@@ -95,7 +95,11 @@ function StockDetailPage() {
         </Link>
       </header>
 
-      {isLoading ? <p className="empty-message">Loading stock detail...</p> : null}
+      {isLoading ? (
+        <div className="page-spinner-wrap">
+          <div className="spinner" />
+        </div>
+      ) : null}
       {error ? <p className="error-message">{error}</p> : null}
 
       {quote ? (
@@ -112,7 +116,7 @@ function StockDetailPage() {
             <strong>{formatPrice(quote.price, quote.currency)}</strong>
             <span>{quote.currency}</span>
             <ChangeBadge value={quote.changePercent} />
-            <b>{`${formatPercent(quote.changePercent)} \uC804\uC77C \uB300\uBE44`}</b>
+            <b>{`${formatPercent(quote.changePercent)} 전일 대비`}</b>
           </div>
 
           <p className="detail-timestamp">{timestamp} GMT+9</p>
@@ -131,11 +135,11 @@ function StockDetailPage() {
 }
 
 function formatDetailTimestamp(date) {
-  const period = date.getHours() < 12 ? '\uC624\uC804' : '\uC624\uD6C4'
+  const period = date.getHours() < 12 ? '오전' : '오후'
   const hour = date.getHours() <= 12 ? date.getHours() : date.getHours() - 12
   const minute = String(date.getMinutes()).padStart(2, '0')
 
-  return `${date.getMonth() + 1}\uC6D4 ${date.getDate()}\uC77C ${period} ${hour}:${minute}`
+  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${period} ${hour}:${minute}`
 }
 
 export default StockDetailPage
