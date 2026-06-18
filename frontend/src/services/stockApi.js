@@ -65,3 +65,14 @@ export async function fetchStockQuote(symbol) {
 
   return response.json()
 }
+
+export async function fetchStockHistory(symbol, range = '1mo') {
+  const params = new URLSearchParams({ range })
+  const response = await fetch(`${apiBaseUrl}/stocks/history/${encodeURIComponent(symbol)}?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('Unable to load stock history.')
+  }
+
+  return response.json()
+}

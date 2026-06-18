@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import AppHeader from './components/AppHeader'
 import IntegrationStatusList from './components/IntegrationStatusList'
@@ -15,15 +15,30 @@ import './App.css'
 const refreshOptions = [30, 60, 120]
 
 function App() {
+  const [theme, setTheme] = useState(() => window.localStorage.getItem('stock-viewer-theme') ?? 'light')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    window.localStorage.setItem('stock-viewer-theme', theme)
+  }, [theme])
+
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
+      <Route
+        path="/"
+        element={
+          <DashboardPage
+            theme={theme}
+            onThemeChange={() => setTheme((currentTheme) => (currentTheme === 'light' ? 'dark' : 'light'))}
+          />
+        }
+      />
       <Route path="/:symbol" element={<StockDetailPage />} />
     </Routes>
   )
 }
 
-function DashboardPage() {
+function DashboardPage({ theme, onThemeChange }) {
   const [query, setQuery] = useState('')
   const [direction, setDirection] = useState('all')
   const [refreshSeconds, setRefreshSeconds] = useState(30)
@@ -48,7 +63,13 @@ function DashboardPage() {
 
   return (
     <main className="app-shell">
-      <AppHeader health={health} isLoading={isLoading} onRefresh={refresh} />
+      <AppHeader
+        health={health}
+        isLoading={isLoading}
+        theme={theme}
+        onRefresh={refresh}
+        onThemeChange={onThemeChange}
+      />
       <TickerStrip stocks={topMovers} />
       <IntegrationStatusList integrations={integrations} />
       <MarketControls

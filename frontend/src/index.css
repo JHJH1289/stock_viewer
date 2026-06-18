@@ -17,6 +17,16 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+:root[data-theme='dark'] {
+  --bg: #111827;
+  --surface: #1f2937;
+  --subtle: #172033;
+  --border: #374151;
+  --text: #d1d5db;
+  --muted: #9ca3af;
+  --heading: #f9fafb;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -25,6 +35,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body.is-detail-page {
+  background: #f6f7f9;
 }
 
 button,

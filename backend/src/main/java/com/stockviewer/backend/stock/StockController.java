@@ -2,6 +2,7 @@ package com.stockviewer.backend.stock;
 
 import java.time.Instant;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.stockviewer.backend.kis.KisQuoteService;
@@ -24,6 +26,7 @@ import com.stockviewer.backend.stockmaster.StockMasterRepository;
 public class StockController {
     private static final Duration WATCHLIST_CACHE_TTL = Duration.ofSeconds(20);
     private static final Duration QUOTE_CACHE_TTL = Duration.ofSeconds(20);
+    private static final Duration HISTORY_CACHE_TTL = Duration.ofSeconds(60);
     private static final int MAX_QUOTE_REQUEST_SIZE = 10;
 
     private final KisQuoteService kisQuoteService;
@@ -31,6 +34,7 @@ public class StockController {
     private List<StockSnapshot> cachedWatchlist = List.of();
     private Instant cachedWatchlistAt = Instant.EPOCH;
     private final Map<String, CachedQuote> quoteCache = new ConcurrentHashMap<>();
+    private final Map<String, CachedHistory> historyCache = new ConcurrentHashMap<>();
 
     public StockController(KisQuoteService kisQuoteService, StockMasterRepository stockMasterRepository) {
         this.kisQuoteService = kisQuoteService;
@@ -93,10 +97,75 @@ public class StockController {
                 .orElseThrow(() -> new IllegalStateException("Quote is not available for symbol: " + symbol));
     }
 
+    @GetMapping("/stocks/history/{symbol}")
+    public StockHistoryResponse history(
+            @PathVariable String symbol,
+            @RequestParam(defaultValue = "1mo") String range) {
+        StockMaster stock = stockMasterRepository.findBySymbol(symbol)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown stock symbol: " + symbol));
+
+        if (!"KR".equals(normalize(stock.country()))) {
+            throw new IllegalArgumentException("History is currently supported for Korean stocks only.");
+        }
+
+        String normalizedRange = normalizeRange(range);
+        String cacheKey = normalize(stock.symbol()) + ":" + normalizedRange;
+        CachedHistory cachedHistory = historyCache.get(cacheKey);
+        if (cachedHistory != null && Instant.now().isBefore(cachedHistory.cachedAt().plus(HISTORY_CACHE_TTL))) {
+            return cachedHistory.history();
+        }
+
+        List<StockHistoryPoint> points = switch (normalizedRange) {
+            case "1d" -> toThirtyMinutePoints(kisQuoteService.getDomesticTodayMinuteHistory(stock.symbol()));
+            case "1mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusMonths(1), LocalDate.now());
+            case "6mo" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusMonths(6), LocalDate.now());
+            case "1y" -> kisQuoteService.getDomesticDailyHistory(stock.symbol(), LocalDate.now().minusYears(1), LocalDate.now());
+            default -> throw new IllegalArgumentException("Unsupported history range: " + range);
+        };
+
+        StockHistoryResponse history = new StockHistoryResponse(
+                stock.symbol(),
+                normalizedRange,
+                "1d".equals(normalizedRange) ? "30m" : "1d",
+                stock.currency(),
+                points);
+        historyCache.put(cacheKey, new CachedHistory(history, Instant.now()));
+
+        return history;
+    }
+
     public record ApiHealth(String status, Instant checkedAt) {
     }
 
     public record StockQuoteRequest(String symbol, String name, String country, String exchange) {
+    }
+
+    private List<StockHistoryPoint> toThirtyMinutePoints(List<StockHistoryPoint> points) {
+        if (points.size() <= 1) {
+            return points;
+        }
+
+        List<StockHistoryPoint> sampledPoints = new ArrayList<>();
+        for (int index = 0; index < points.size(); index += 30) {
+            sampledPoints.add(points.get(index));
+        }
+
+        StockHistoryPoint lastPoint = points.get(points.size() - 1);
+        if (!sampledPoints.get(sampledPoints.size() - 1).timestamp().equals(lastPoint.timestamp())) {
+            sampledPoints.add(lastPoint);
+        }
+
+        return sampledPoints;
+    }
+
+    private String normalizeRange(String range) {
+        return switch (normalize(range)) {
+            case "1D", "DAY" -> "1d";
+            case "1MO", "1M", "MONTH" -> "1mo";
+            case "6MO", "6M" -> "6mo";
+            case "1Y", "YEAR" -> "1y";
+            default -> range == null ? "1mo" : range.trim().toLowerCase(Locale.ROOT);
+        };
     }
 
     private List<StockSnapshot> getCachedQuote(StockQuoteRequest request) {
@@ -161,6 +230,9 @@ public class StockController {
     }
 
     private record CachedQuote(StockSnapshot quote, Instant cachedAt) {
+    }
+
+    private record CachedHistory(StockHistoryResponse history, Instant cachedAt) {
     }
 
     private void pauseBetweenQuoteCalls() {
