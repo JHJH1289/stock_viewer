@@ -3,7 +3,7 @@ import PriceSparkline from './PriceSparkline'
 import StockLink from './StockLink'
 import { formatPrice, getPrimaryStockLabel, getSecondaryStockLabel } from '../utils/market'
 
-function QuoteTable({ stocks, lastUpdated }) {
+function QuoteTable({ stocks, lastUpdated, isLoggedIn, onBuy }) {
   return (
     <section className="market-board" aria-label="Live watchlist">
       <div className="board-heading">
@@ -15,16 +15,17 @@ function QuoteTable({ stocks, lastUpdated }) {
       </div>
 
       <div className="quote-table">
-        <div className="quote-header">
+        <div className={`quote-header${isLoggedIn ? ' with-action' : ''}`}>
           <span>Symbol</span>
           <span>Market</span>
           <span>Price</span>
           <span>Change</span>
           <span>Trend</span>
+          {isLoggedIn && <span></span>}
         </div>
 
         {stocks.map((stock) => (
-          <div className="quote-row" key={stock.symbol}>
+          <div className={`quote-row${isLoggedIn ? ' with-action' : ''}`} key={stock.symbol}>
             <div className="symbol-cell">
               <StockLink className="stock-text-link" symbol={stock.symbol}>
                 <strong>{getPrimaryStockLabel(stock)}</strong>
@@ -37,6 +38,11 @@ function QuoteTable({ stocks, lastUpdated }) {
             <StockLink className="sparkline-link" symbol={stock.symbol} ariaLabel={`${stock.name} detail`}>
               <PriceSparkline changePercent={stock.changePercent} symbol={stock.symbol} compact />
             </StockLink>
+            {isLoggedIn && (
+              <button className="trade-action-btn buy-btn" type="button" onClick={() => onBuy(stock)}>
+                매수
+              </button>
+            )}
           </div>
         ))}
 

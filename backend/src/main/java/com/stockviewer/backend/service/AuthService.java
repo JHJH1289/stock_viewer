@@ -1,5 +1,6 @@
 package com.stockviewer.backend.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,8 +11,10 @@ import org.springframework.stereotype.Service;
 import com.stockviewer.backend.dto.auth.AuthResponse;
 import com.stockviewer.backend.dto.auth.LoginRequest;
 import com.stockviewer.backend.dto.auth.SignupRequest;
+import com.stockviewer.backend.entity.Balance;
 import com.stockviewer.backend.entity.Role;
 import com.stockviewer.backend.entity.User;
+import com.stockviewer.backend.repository.BalanceRepository;
 import com.stockviewer.backend.repository.UserRepository;
 import com.stockviewer.backend.security.JwtTokenProvider;
 
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final BalanceRepository balanceRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
@@ -42,10 +46,17 @@ public class AuthService {
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        String token = jwtTokenProvider.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        balanceRepository.save(Balance.builder()
+                .userId(savedUser.getId())
+                .krwAmount(new BigDecimal("10000000"))
+                .usdAmount(BigDecimal.ZERO)
+                .updatedAt(LocalDateTime.now())
+                .build());
+
+        String token = jwtTokenProvider.generateToken(savedUser.getEmail());
+        return new AuthResponse(token, savedUser.getUsername(), savedUser.getEmail());
     }
 
     public AuthResponse login(LoginRequest request) {
