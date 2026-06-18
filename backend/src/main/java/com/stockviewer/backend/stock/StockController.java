@@ -52,6 +52,10 @@ public class StockController {
             return cachedWatchlist;
         }
 
+        if (!kisQuoteService.isConfigured()) {
+            return List.of();
+        }
+
         StockSnapshot samsung = kisQuoteService.getDomesticQuote("005930", "\uC0BC\uC131\uC804\uC790");
         pauseBetweenQuoteCalls();
         StockSnapshot skHynix = kisQuoteService.getDomesticQuote("000660", "SK\uD558\uC774\uB2C9\uC2A4");

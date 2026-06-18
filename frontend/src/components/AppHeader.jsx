@@ -1,4 +1,14 @@
-function AppHeader({ health, isLoading, theme, onRefresh, onThemeChange }) {
+function AppHeader({
+  health,
+  isLoading,
+  theme,
+  onRefresh,
+  onThemeChange,
+  currentUser,
+  onLoginClick,
+  onSignupClick,
+  onLogout,
+}) {
   return (
     <header className="app-header">
       <div>
@@ -17,6 +27,23 @@ function AppHeader({ health, isLoading, theme, onRefresh, onThemeChange }) {
         <button className="icon-button" type="button" onClick={onRefresh} aria-label="Refresh">
           <span className={isLoading ? 'refresh-symbol is-spinning' : 'refresh-symbol'} />
         </button>
+        {currentUser ? (
+          <>
+            <span className="user-pill">{currentUser.username}</span>
+            <button className="auth-action" type="button" onClick={onLogout}>
+              로그아웃
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="auth-action" type="button" onClick={onLoginClick}>
+              로그인
+            </button>
+            <button className="auth-action auth-action-primary" type="button" onClick={onSignupClick}>
+              회원가입
+            </button>
+          </>
+        )}
       </div>
     </header>
   )

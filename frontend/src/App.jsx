@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import AppHeader from './components/AppHeader'
+import AuthModal from './components/AuthModal'
 import IntegrationStatusList from './components/IntegrationStatusList'
 import MarketControls from './components/MarketControls'
 import QuoteTable from './components/QuoteTable'
@@ -42,6 +43,11 @@ function DashboardPage({ theme, onThemeChange }) {
   const [query, setQuery] = useState('')
   const [direction, setDirection] = useState('all')
   const [refreshSeconds, setRefreshSeconds] = useState(30)
+  const [authModal, setAuthModal] = useState(null)
+  const [currentUser, setCurrentUser] = useState(() => {
+    const username = window.localStorage.getItem('username')
+    return username ? { username } : null
+  })
   const {
     health,
     integrations,
@@ -69,6 +75,14 @@ function DashboardPage({ theme, onThemeChange }) {
         theme={theme}
         onRefresh={refresh}
         onThemeChange={onThemeChange}
+        currentUser={currentUser}
+        onLoginClick={() => setAuthModal('login')}
+        onSignupClick={() => setAuthModal('signup')}
+        onLogout={() => {
+          window.localStorage.removeItem('token')
+          window.localStorage.removeItem('username')
+          setCurrentUser(null)
+        }}
       />
       <TickerStrip stocks={topMovers} />
       <IntegrationStatusList integrations={integrations} />
@@ -91,6 +105,14 @@ function DashboardPage({ theme, onThemeChange }) {
         error={searchError}
       />
       <QuoteTable stocks={filteredStocks} lastUpdated={lastUpdated} />
+      {authModal ? (
+        <AuthModal
+          mode={authModal}
+          onClose={() => setAuthModal(null)}
+          onModeChange={setAuthModal}
+          onAuthSuccess={(data) => setCurrentUser({ username: data.username })}
+        />
+      ) : null}
     </main>
   )
 }
