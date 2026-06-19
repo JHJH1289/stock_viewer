@@ -1,5 +1,5 @@
 """
-financial_base.csv와 market_snapshot.csv를 합쳐 PER, PBR, ROE, 부채비율, 점수를 생성합니다.
+financial_base.csv와 market_snapshot.csv를 합쳐 가치평가 지표와 연속 점수를 생성합니다.
 
 입력
 - etl/processed/2025/general/financial_base.csv
@@ -7,10 +7,6 @@ financial_base.csv와 market_snapshot.csv를 합쳐 PER, PBR, ROE, 부채비율,
 
 출력
 - etl/processed/2025/general/valuation_metrics.csv
-
-실행
-    python etl/scripts/general/04_make_valuation_metrics.py
-
 """
 
 from __future__ import annotations
@@ -20,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 YEAR = "2025"
@@ -32,7 +29,7 @@ DEFAULT_OUTPUT = PROCESSED_DIR / "valuation_metrics.csv"
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="PER/PBR/ROE/부채비율/점수 생성")
+    parser = argparse.ArgumentParser(description="PER/PBR/ROE/부채비율 기반 가치평가 지표 생성")
     parser.add_argument("--financial", type=Path, default=DEFAULT_FINANCIAL, help="financial_base.csv 경로")
     parser.add_argument("--market", type=Path, default=DEFAULT_MARKET, help="market_snapshot.csv 경로")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT, help="valuation_metrics.csv 출력 경로")
@@ -48,7 +45,6 @@ def read_csv(path: Path, symbol_columns: list[str]) -> pd.DataFrame:
 
 
 def normalize_symbol(series: pd.Series) -> pd.Series:
-    """종목코드를 6자리 문자열로 통일합니다. 예: 20 -> 000020"""
     return (
         series.astype("string")
         .str.strip()
@@ -65,73 +61,18 @@ def to_number(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
 
 
 def safe_divide(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
-    """0으로 나누는 경우 NaN으로 처리합니다."""
-    denominator = denominator.replace({0: np.nan})
-    return numerator / denominator
+    return numerator / denominator.replace({0: np.nan})
 
 
-def score_per(per: float) -> int:
-    """PER 점수: 낮을수록 높은 점수, 적자/음수/결측은 0점"""
-    if pd.isna(per) or per <= 0:
-        return 0
-    if per <= 5:
-        return 25
-    if per <= 10:
-        return 20
-    if per <= 15:
-        return 15
-    if per <= 20:
-        return 10
-    if per <= 30:
-        return 5
-    return 0
+def percentile_score(series: pd.Series, higher_is_better: bool) -> pd.Series:
+    """전체 종목 내 분위 순위를 0~25점의 연속 점수로 변환합니다."""
+    valid = series.dropna()
+    if valid.empty:
+        return pd.Series(0.0, index=series.index)
 
-
-def score_pbr(pbr: float) -> int:
-    """PBR 점수: 낮을수록 높은 점수, 자본잠식/음수/결측은 0점"""
-    if pd.isna(pbr) or pbr <= 0:
-        return 0
-    if pbr <= 0.5:
-        return 25
-    if pbr <= 1:
-        return 20
-    if pbr <= 1.5:
-        return 15
-    if pbr <= 2:
-        return 10
-    if pbr <= 3:
-        return 5
-    return 0
-
-
-def score_roe(roe: float) -> int:
-    """ROE 점수: 높을수록 높은 점수"""
-    if pd.isna(roe):
-        return 0
-    if roe >= 15:
-        return 25
-    if roe >= 10:
-        return 20
-    if roe >= 5:
-        return 15
-    if roe > 0:
-        return 5
-    return 0
-
-
-def score_debt_ratio(debt_ratio: float) -> int:
-    """부채비율 점수: 낮을수록 높은 점수"""
-    if pd.isna(debt_ratio) or debt_ratio < 0:
-        return 0
-    if debt_ratio <= 100:
-        return 25
-    if debt_ratio <= 150:
-        return 15
-    if debt_ratio <= 200:
-        return 10
-    if debt_ratio <= 300:
-        return 5
-    return 0
+    percentile = series.rank(pct=True, method="average")
+    score = percentile * 25 if higher_is_better else (1 - percentile) * 25
+    return score.fillna(0).clip(lower=0, upper=25).round(2)
 
 
 def main() -> int:
@@ -148,26 +89,24 @@ def main() -> int:
     financial["symbol"] = normalize_symbol(financial["symbol"])
     market["symbol"] = normalize_symbol(market["symbol"])
 
-    numeric_financial_columns = [
-        "total_assets",
-        "total_liabilities",
-        "total_equity",
-        "net_income",
-        "operating_income",
-        "revenue",
-    ]
-    numeric_market_columns = ["price", "market_cap"]
+    financial = to_number(
+        financial,
+        [
+            "total_assets",
+            "total_liabilities",
+            "total_equity",
+            "net_income",
+            "operating_income",
+            "revenue",
+        ],
+    )
+    market = to_number(market, ["price", "market_cap"])
 
-    financial = to_number(financial, numeric_financial_columns)
-    market = to_number(market, numeric_market_columns)
-
-    # 같은 종목이 중복 수집된 경우 가장 마지막 행을 사용합니다.
     market = market.dropna(subset=["symbol"]).drop_duplicates(subset=["symbol"], keep="last")
     financial = financial.dropna(subset=["symbol"]).drop_duplicates(subset=["symbol"], keep="last")
 
     merged = financial.merge(market, on="symbol", how="inner")
 
-    # 핵심 재무지표 계산
     merged["per"] = safe_divide(merged["market_cap"], merged["net_income"])
     merged.loc[merged["net_income"] <= 0, "per"] = np.nan
 
@@ -180,18 +119,17 @@ def main() -> int:
     merged["debt_ratio"] = safe_divide(merged["total_liabilities"], merged["total_equity"]) * 100
     merged.loc[merged["total_equity"] <= 0, "debt_ratio"] = np.nan
 
-    # 점수 계산: 프론트에서 상세 점수도 보여줄 수 있도록 개별 점수와 총점을 모두 저장합니다.
-    merged["per_score"] = merged["per"].apply(score_per)
-    merged["pbr_score"] = merged["pbr"].apply(score_pbr)
-    merged["roe_score"] = merged["roe"].apply(score_roe)
-    merged["debt_score"] = merged["debt_ratio"].apply(score_debt_ratio)
-    merged["valuation_score"] = merged[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1).astype(int)
+    # 계단형 점수 대신 전체 분포 기준 연속 점수를 사용합니다.
+    # PER/PBR/부채비율은 낮을수록, ROE는 높을수록 높은 점수를 받습니다.
+    merged["per_score"] = percentile_score(merged["per"], higher_is_better=False)
+    merged["pbr_score"] = percentile_score(merged["pbr"], higher_is_better=False)
+    merged["roe_score"] = percentile_score(merged["roe"], higher_is_better=True)
+    merged["debt_score"] = percentile_score(merged["debt_ratio"], higher_is_better=False)
+    merged["valuation_score"] = merged[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1).round(2)
 
-    # 화면 표시/CSV 확인이 쉽도록 소수점 정리
     for column in ["per", "pbr", "roe", "debt_ratio"]:
         merged[column] = merged[column].round(2)
 
-    # valuation_label은 일부러 만들지 않습니다. 라벨링은 프론트에서 처리합니다.
     columns = [
         "symbol",
         "corpCode",
@@ -217,8 +155,8 @@ def main() -> int:
         "debt_score",
         "valuation_score",
     ]
-    columns = [column for column in columns if column in merged.columns]
-    merged = merged[columns].sort_values(["valuation_score", "symbol"], ascending=[False, True])
+    merged = merged[[column for column in columns if column in merged.columns]]
+    merged = merged.sort_values(["valuation_score", "symbol"], ascending=[False, True])
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     merged.to_csv(args.output, index=False, encoding="utf-8-sig")

@@ -57,7 +57,7 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
     <section className="valuation-panel" aria-label="Valuation metrics">
       <div className={`valuation-score-block ${scoreTone}`}>
         <div className="valuation-score-ring" style={{ '--score': `${scorePercent}%` }}>
-          <strong>{formatPlain(score)}</strong>
+          <strong>{formatScore(score)}</strong>
           <span>/100</span>
         </div>
         <div className="valuation-score-copy">
@@ -94,7 +94,7 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
                 </div>
                 <div className="valuation-metric-foot">
                   <span>{item.helper}</span>
-                  <b>{isBurden ? '부담' : `${formatPlain(itemScore)}점`}</b>
+                  <b>{isBurden ? `${formatScore(itemScore)}점` : `${formatScore(itemScore)}점`}</b>
                 </div>
               </div>
             )
@@ -163,11 +163,14 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max)
 }
 
-function formatPlain(value) {
+function formatScore(value) {
   const number = toNumber(value)
   if (number === null) return '-'
 
-  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(number)
+  return new Intl.NumberFormat('ko-KR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(number)
 }
 
 function formatRatio(value, suffix) {
