@@ -78,6 +78,18 @@ function DashboardPage({ theme, onThemeChange }) {
   } = useStockSearch(query)
 
   const handleBuy = (stock) => setTradeTarget({ stock, mode: 'buy' })
+  const handleSell = (holding) => {
+    const live = stocks.find((stock) => stock.symbol === holding.symbol)
+    const currency = holding.marketCode === 'KRX' ? 'KRW' : 'USD'
+    const stock = live ?? {
+      symbol: holding.symbol,
+      name: holding.stockName,
+      price: holding.avgBuyPrice,
+      currency,
+      market: holding.marketCode,
+    }
+    setTradeTarget({ stock, mode: 'sell' })
+  }
 
   return (
     <main className="app-shell">
@@ -98,7 +110,12 @@ function DashboardPage({ theme, onThemeChange }) {
         }}
       />
       <TickerStrip stocks={topMovers} />
-      <AccountSummaryPanel isLoggedIn={!!currentUser} refreshKey={portfolioKey} />
+      <AccountSummaryPanel
+        isLoggedIn={!!currentUser}
+        refreshKey={portfolioKey}
+        stocks={stocks}
+        onSell={handleSell}
+      />
       <MarketControls
         query={query}
         direction={direction}

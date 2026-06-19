@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
 import StockBoardPanel from './StockBoardPanel'
+import StockNewsPanel from './StockNewsPanel'
 import ValuationMetricsPanel from './ValuationMetricsPanel'
 import { fetchStockHistory, fetchStockQuote, fetchValuationMetricsHistory } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
@@ -200,7 +201,10 @@ function StockDetailPage() {
             currency={quote.currency}
             onMetricsChange={handleValuationChange}
           />
-          <StockBoardPanel quote={quote} />
+          <section className="detail-news-board-section" aria-label="News and board">
+            <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} />
+            <StockBoardPanel quote={quote} />
+          </section>
         </section>
       ) : null}
     </main>

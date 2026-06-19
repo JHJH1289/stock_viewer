@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import PostInlineThread from './PostInlineThread'
 import { createStockBoardPost, fetchStockBoardPosts } from '../services/stockApi'
 
 function StockBoardPanel({ quote }) {
@@ -8,6 +8,7 @@ function StockBoardPanel({ quote }) {
   const [content, setContent] = useState('')
   const [boardMode, setBoardMode] = useState('all')
   const [sortMode, setSortMode] = useState('latest')
+  const [expandedPostId, setExpandedPostId] = useState(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -30,6 +31,7 @@ function StockBoardPanel({ quote }) {
         const nextPosts = await fetchStockBoardPosts(quote.symbol)
         if (cancelled) return
         setPosts(nextPosts)
+        setExpandedPostId(null)
         setError('')
       } catch (err) {
         if (cancelled) return
@@ -126,19 +128,31 @@ function StockBoardPanel({ quote }) {
             <p className="stock-board-empty">게시글이 없습니다.</p>
           ) : null}
           {displayedPosts.map((post) => (
-            <article className="stock-board-row" key={post.postId}>
-              <span>{post.postId}</span>
-              <Link className="stock-board-title-link" to={`/posts/${post.postId}`}>
-                {post.title}
-              </Link>
-              <span className="stock-board-author">
-                {post.username}
-                {post.authorHolding ? <i>보유</i> : null}
-              </span>
-              <span>{formatPostTime(post.createdAt)}</span>
-              <span>{getViewCount(post)}</span>
-              <span>{getRecommendCount(post)}</span>
-            </article>
+            <div className="stock-board-entry" key={post.postId}>
+              <article className="stock-board-row">
+                <span>{post.postId}</span>
+                <button
+                  className="stock-board-title-link"
+                  type="button"
+                  aria-expanded={expandedPostId === post.postId}
+                  onClick={() => setExpandedPostId((current) => (current === post.postId ? null : post.postId))}
+                >
+                  {post.title}
+                </button>
+                <span className="stock-board-author">
+                  {post.username}
+                  {post.authorHolding ? <i>보유</i> : null}
+                </span>
+                <span>{formatPostTime(post.createdAt)}</span>
+                <span>{getViewCount(post)}</span>
+                <span>{getRecommendCount(post)}</span>
+              </article>
+              {expandedPostId === post.postId ? (
+                <div className="stock-board-inline">
+                  <PostInlineThread postId={post.postId} />
+                </div>
+              ) : null}
+            </div>
           ))}
         </div>
       ) : null}

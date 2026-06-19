@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import PostInlineThread from './PostInlineThread'
 import { fetchMarketBoardPosts } from '../services/stockApi'
 
 const marketSlots = [
@@ -64,6 +64,8 @@ function MarketBoardSlots() {
 }
 
 function BoardSlot({ eyebrow, title, posts, isLoading, error }) {
+  const [expandedPostId, setExpandedPostId] = useState(null)
+
   return (
     <div className="board-slot">
       <div className="board-slot-heading">
@@ -80,14 +82,29 @@ function BoardSlot({ eyebrow, title, posts, isLoading, error }) {
       {!error && posts.length > 0 ? (
         <div className="board-post-list">
           {posts.map((post) => (
-            <article className="board-post-preview" key={`${title}-${post.postId}`}>
-              <Link to={`/posts/${post.postId}`}>{post.title}</Link>
+            <article
+              className={expandedPostId === post.postId ? 'board-post-preview is-expanded' : 'board-post-preview'}
+              key={`${title}-${post.postId}`}
+            >
+              <button
+                className="board-post-title-button"
+                type="button"
+                aria-expanded={expandedPostId === post.postId}
+                onClick={() => setExpandedPostId((current) => (current === post.postId ? null : post.postId))}
+              >
+                {post.title}
+              </button>
               <span className="board-post-meta">
                 {post.symbol ? <b>{post.symbol}</b> : null}
                 <span>{post.username ?? '-'}</span>
                 {post.authorHolding ? <i>보유</i> : null}
                 <span>{formatPostDate(post.createdAt)}</span>
               </span>
+              {expandedPostId === post.postId ? (
+                <div className="board-post-inline">
+                  <PostInlineThread postId={post.postId} />
+                </div>
+              ) : null}
             </article>
           ))}
         </div>

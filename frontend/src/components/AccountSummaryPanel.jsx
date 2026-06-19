@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { fetchBalance, fetchTradeOrders } from '../services/stockApi'
+import { fetchBalance, fetchHoldings, fetchTradeOrders } from '../services/stockApi'
 import { formatPrice } from '../utils/market'
 
-function AccountSummaryPanel({ isLoggedIn, refreshKey }) {
+function AccountSummaryPanel({ isLoggedIn, refreshKey, stocks = [], onSell }) {
   const [balance, setBalance] = useState(null)
+  const [holdings, setHoldings] = useState([])
   const [orders, setOrders] = useState([])
+  const [isHoldingsOpen, setIsHoldingsOpen] = useState(true)
   const [isOrdersOpen, setIsOrdersOpen] = useState(false)
   const [error, setError] = useState('')
 
@@ -15,16 +17,18 @@ function AccountSummaryPanel({ isLoggedIn, refreshKey }) {
 
     let cancelled = false
 
-    Promise.all([fetchBalance(), fetchTradeOrders()])
-      .then(([nextBalance, nextOrders]) => {
+    Promise.all([fetchBalance(), fetchHoldings(), fetchTradeOrders()])
+      .then(([nextBalance, nextHoldings, nextOrders]) => {
         if (cancelled) return
         setBalance(nextBalance)
+        setHoldings(nextHoldings)
         setOrders(nextOrders)
         setError('')
       })
       .catch((err) => {
         if (cancelled) return
         setBalance(null)
+        setHoldings([])
         setOrders([])
         setError(err.message)
       })
@@ -57,6 +61,53 @@ function AccountSummaryPanel({ isLoggedIn, refreshKey }) {
           <span>USD 잔고</span>
           <strong>{isLoggedIn && balance ? formatPrice(balance.usdAmount, 'USD') : '-'}</strong>
         </div>
+      </div>
+
+      <div className="account-orders">
+        <button
+          className="account-orders-toggle"
+          type="button"
+          aria-expanded={isHoldingsOpen}
+          onClick={() => setIsHoldingsOpen((isOpen) => !isOpen)}
+        >
+          <span>보유 종목</span>
+          <b>{isLoggedIn ? `${holdings.length}개 ${isHoldingsOpen ? '접기' : '보기'}` : '로그인 필요'}</b>
+        </button>
+        {isHoldingsOpen ? (
+          !isLoggedIn ? (
+            <p className="account-orders-empty">로그인하면 보유 종목을 확인할 수 있습니다.</p>
+          ) : holdings.length === 0 ? (
+            <p className="account-orders-empty">보유 종목이 없습니다.</p>
+          ) : (
+            <div className="account-holdings-table">
+              <div className="account-holdings-row is-header">
+                <span>종목</span>
+                <span>수량</span>
+                <span>평균가</span>
+                <span>현재가</span>
+                <span></span>
+              </div>
+              {holdings.map((holding) => {
+                const live = stocks.find((stock) => stock.symbol === holding.symbol)
+                const currency = holding.marketCode === 'KRX' ? 'KRW' : 'USD'
+                return (
+                  <div className="account-holdings-row" key={`${holding.marketCode}-${holding.symbol}`}>
+                    <strong>
+                      {holding.symbol}
+                      <small>{holding.stockName}</small>
+                    </strong>
+                    <span>{Number(holding.quantity).toLocaleString()}</span>
+                    <span>{formatPrice(holding.avgBuyPrice, currency)}</span>
+                    <span>{live ? formatPrice(live.price, live.currency ?? currency) : '-'}</span>
+                    <button type="button" onClick={() => onSell?.(holding)}>
+                      매도
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : null}
       </div>
 
       <div className="account-orders">
