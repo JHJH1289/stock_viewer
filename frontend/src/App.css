@@ -959,7 +959,7 @@
 
 .valuation-panel {
   display: grid;
-  grid-template-columns: minmax(150px, 0.24fr) minmax(0, 1fr);
+  grid-template-columns: minmax(190px, 0.28fr) minmax(0, 1fr);
   gap: 22px;
   align-items: stretch;
   margin-top: 26px;
@@ -969,51 +969,78 @@
 
 .valuation-score-block {
   display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  align-items: center;
   align-content: center;
-  gap: 8px;
+  gap: 14px;
   min-height: 164px;
   padding-right: 22px;
   border-right: 1px solid #e5e7eb;
 }
 
-.valuation-score-block span,
+.valuation-score-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 58%, transparent 59%),
+    conic-gradient(#2563eb var(--score), #e5e7eb 0);
+}
+
+.valuation-score-ring strong {
+  color: #111827;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.valuation-score-ring span {
+  position: absolute;
+  top: 70px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.valuation-score-block.is-strong .valuation-score-ring {
+  background:
+    radial-gradient(circle at center, #ffffff 0 58%, transparent 59%),
+    conic-gradient(#059669 var(--score), #e5e7eb 0);
+}
+
+.valuation-score-block.is-caution .valuation-score-ring {
+  background:
+    radial-gradient(circle at center, #ffffff 0 58%, transparent 59%),
+    conic-gradient(#dc2626 var(--score), #e5e7eb 0);
+}
+
+.valuation-score-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.valuation-score-copy span,
 .valuation-heading span,
-.valuation-metric span,
-.valuation-metric small,
+.valuation-metric-topline span,
+.valuation-metric-foot span,
 .valuation-financial-grid dt {
   color: #64748b;
 }
 
-.valuation-score-block span,
-.valuation-metric span,
-.valuation-metric small,
+.valuation-score-copy span,
+.valuation-metric-topline span,
+.valuation-metric-foot span,
 .valuation-financial-grid dt {
   font-size: 12px;
   font-weight: 800;
 }
 
-.valuation-score-block strong {
-  color: #111827;
-  font-size: 48px;
-  line-height: 1;
-}
-
-.valuation-score-block strong.is-strong {
-  color: #047857;
-}
-
-.valuation-score-block strong.is-steady {
-  color: #2563eb;
-}
-
-.valuation-score-block strong.is-caution {
-  color: #be123c;
-}
-
-.valuation-score-block p {
+.valuation-score-copy p {
   margin: 0;
   color: #111827;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
 }
 
@@ -1054,16 +1081,73 @@
 
 .valuation-metric {
   display: grid;
-  gap: 6px;
-  min-height: 92px;
+  gap: 10px;
+  min-height: 128px;
   padding: 14px;
   background: #f8fafc;
+}
+
+.valuation-metric-topline,
+.valuation-metric-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.valuation-metric-topline small {
+  min-width: 42px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.valuation-metric.is-good .valuation-metric-topline small {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.valuation-metric.is-low .valuation-metric-topline small {
+  background: #fee2e2;
+  color: #be123c;
 }
 
 .valuation-metric strong {
   color: #111827;
   font-size: 20px;
   line-height: 1.1;
+}
+
+.valuation-meter {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.valuation-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+.valuation-metric.is-good .valuation-meter span {
+  background: #059669;
+}
+
+.valuation-metric.is-low .valuation-meter span {
+  background: #dc2626;
+}
+
+.valuation-metric-foot b {
+  color: #111827;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .valuation-financial-grid {
@@ -1580,11 +1664,25 @@
   }
 
   .valuation-score-block {
+    grid-template-columns: 96px minmax(0, 1fr);
     min-height: 0;
     padding-right: 0;
     padding-bottom: 18px;
     border-right: 0;
     border-bottom: 1px solid #e5e7eb;
+  }
+
+  .valuation-score-ring {
+    width: 96px;
+    height: 96px;
+  }
+
+  .valuation-score-ring strong {
+    font-size: 32px;
+  }
+
+  .valuation-score-ring span {
+    top: 58px;
   }
 
   .valuation-heading {

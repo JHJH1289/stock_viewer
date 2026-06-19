@@ -3,12 +3,34 @@ import { formatPrice } from '../utils/market'
 function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
   if (!metrics) return null
 
-  const scoreTone = getScoreTone(metrics.valuationScore)
+  const score = toNumber(metrics.valuationScore)
+  const scorePercent = clamp(score ?? 0, 0, 100)
+  const scoreTone = getScoreTone(score)
   const metricItems = [
-    { label: 'PER', value: formatRatio(metrics.per, '배'), score: metrics.perScore },
-    { label: 'PBR', value: formatRatio(metrics.pbr, '배'), score: metrics.pbrScore },
-    { label: 'ROE', value: formatPercentValue(metrics.roe), score: metrics.roeScore },
-    { label: '부채비율', value: formatPercentValue(metrics.debtRatio), score: metrics.debtScore },
+    {
+      label: 'PER',
+      value: formatRatio(metrics.per, '배'),
+      score: metrics.perScore,
+      helper: '낮을수록 유리',
+    },
+    {
+      label: 'PBR',
+      value: formatRatio(metrics.pbr, '배'),
+      score: metrics.pbrScore,
+      helper: '낮을수록 유리',
+    },
+    {
+      label: 'ROE',
+      value: formatPercentValue(metrics.roe),
+      score: metrics.roeScore,
+      helper: '높을수록 유리',
+    },
+    {
+      label: '부채비율',
+      value: formatPercentValue(metrics.debtRatio),
+      score: metrics.debtScore,
+      helper: '낮을수록 안정',
+    },
   ]
 
   const financialItems = [
@@ -22,10 +44,15 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
 
   return (
     <section className="valuation-panel" aria-label="Valuation metrics">
-      <div className="valuation-score-block">
-        <span>가치 점수</span>
-        <strong className={scoreTone}>{formatPlain(metrics.valuationScore)}</strong>
-        <p>{getScoreLabel(metrics.valuationScore)}</p>
+      <div className={`valuation-score-block ${scoreTone}`}>
+        <div className="valuation-score-ring" style={{ '--score': `${scorePercent}%` }}>
+          <strong>{formatPlain(score)}</strong>
+          <span>/100</span>
+        </div>
+        <div className="valuation-score-copy">
+          <span>가치 점수</span>
+          <p>{getScoreLabel(score)}</p>
+        </div>
       </div>
 
       <div className="valuation-content">
@@ -35,13 +62,28 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
         </div>
 
         <div className="valuation-metric-grid">
-          {metricItems.map((item) => (
-            <div className="valuation-metric" key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{`${formatPlain(item.score)}점`}</small>
-            </div>
-          ))}
+          {metricItems.map((item) => {
+            const itemScore = toNumber(item.score)
+            const itemPercent = clamp(((itemScore ?? 0) / 25) * 100, 0, 100)
+            const itemTone = getMetricTone(itemScore)
+
+            return (
+              <div className={`valuation-metric ${itemTone}`} key={item.label}>
+                <div className="valuation-metric-topline">
+                  <span>{item.label}</span>
+                  <small>{getMetricLabel(itemScore)}</small>
+                </div>
+                <strong>{item.value}</strong>
+                <div className="valuation-meter" aria-hidden="true">
+                  <span style={{ width: `${itemPercent}%` }} />
+                </div>
+                <div className="valuation-metric-foot">
+                  <span>{item.helper}</span>
+                  <b>{`${formatPlain(itemScore)}점`}</b>
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         <dl className="valuation-financial-grid">
@@ -57,40 +99,47 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
   )
 }
 
-function formatPlain(value) {
+function toNumber(value) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '-'
+    return null
   }
 
-  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(Number(value))
+  return Number(value)
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max)
+}
+
+function formatPlain(value) {
+  const number = toNumber(value)
+  if (number === null) return '-'
+
+  return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 }).format(number)
 }
 
 function formatRatio(value, suffix) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '-'
-  }
+  const number = toNumber(value)
+  if (number === null) return '-'
 
   return `${new Intl.NumberFormat('ko-KR', {
     maximumFractionDigits: 2,
-  }).format(Number(value))}${suffix}`
+  }).format(number)}${suffix}`
 }
 
 function formatPercentValue(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '-'
-  }
+  const number = toNumber(value)
+  if (number === null) return '-'
 
   return `${new Intl.NumberFormat('ko-KR', {
     maximumFractionDigits: 2,
-  }).format(Number(value))}%`
+  }).format(number)}%`
 }
 
 function formatLargeMoney(value, currency) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) {
-    return '-'
-  }
+  const number = toNumber(value)
+  if (number === null) return '-'
 
-  const number = Number(value)
   if (currency === 'KRW' && Math.abs(number) >= 100_000_000) {
     return `${new Intl.NumberFormat('ko-KR', {
       maximumFractionDigits: 1,
@@ -108,9 +157,21 @@ function getScoreTone(score) {
 
 function getScoreLabel(score) {
   if (score >= 75) return '저평가 후보'
-  if (score >= 50) return '보통'
-  if (score >= 25) return '고평가 주의'
+  if (score >= 50) return '균형권'
+  if (score >= 25) return '주의 필요'
   return '분석 주의'
+}
+
+function getMetricTone(score) {
+  if (score >= 20) return 'is-good'
+  if (score >= 10) return 'is-mid'
+  return 'is-low'
+}
+
+function getMetricLabel(score) {
+  if (score >= 20) return '좋음'
+  if (score >= 10) return '보통'
+  return '주의'
 }
 
 export default ValuationMetricsPanel
