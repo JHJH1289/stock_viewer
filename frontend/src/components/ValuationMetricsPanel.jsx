@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatPrice } from '../utils/market'
 
 const VALUATION_BENCHMARKS = {
@@ -5,7 +6,44 @@ const VALUATION_BENCHMARKS = {
   pbr: { median: 0.84, upperQuartile: 1.89, high: 4.98 },
 }
 
+const METRIC_GUIDES = {
+  PER: {
+    summary: '주가가 순이익의 몇 배로 거래되는지 보는 지표입니다. 낮을수록 이익 대비 가격 부담이 작습니다.',
+    examples: [
+      ['낮음', '10배 이하'],
+      ['중간', '10~30배'],
+      ['높음', '30배 이상'],
+    ],
+  },
+  PBR: {
+    summary: '주가가 기업 순자산의 몇 배인지 보는 지표입니다. 낮을수록 자본 대비 가격 부담이 작습니다.',
+    examples: [
+      ['낮음', '1배 이하'],
+      ['중간', '1~3배'],
+      ['높음', '3배 이상'],
+    ],
+  },
+  ROE: {
+    summary: '자기자본으로 얼마나 효율적으로 이익을 냈는지 보는 수익성 지표입니다. 높을수록 좋습니다.',
+    examples: [
+      ['낮음', '5% 미만'],
+      ['중간', '5~15%'],
+      ['높음', '15% 이상'],
+    ],
+  },
+  부채비율: {
+    summary: '자본 대비 부채 규모를 보는 안정성 지표입니다. 낮을수록 재무 부담이 작습니다.',
+    examples: [
+      ['낮음', '100% 이하'],
+      ['중간', '100~200%'],
+      ['높음', '200% 이상'],
+    ],
+  },
+}
+
 function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
+  const [openGuide, setOpenGuide] = useState(null)
+
   if (!metrics) return null
 
   const score = toNumber(metrics.valuationScore)
@@ -81,11 +119,23 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
               : clamp(((itemScore ?? 0) / 25) * 100, 0, 100)
             const itemTone = isBurden ? item.burden.tone : getMetricTone(itemScore)
             const itemLabel = isBurden ? item.burden.label : getMetricLabel(itemScore)
+            const isGuideOpen = openGuide === item.label
 
             return (
               <div className={`valuation-metric ${itemTone}`} key={item.label}>
                 <div className="valuation-metric-topline">
-                  <span>{item.label}</span>
+                  <span className="valuation-metric-title">
+                    {item.label}
+                    <button
+                      type="button"
+                      className="valuation-info-button"
+                      aria-expanded={isGuideOpen}
+                      aria-label={`${item.label} 설명`}
+                      onClick={() => setOpenGuide(isGuideOpen ? null : item.label)}
+                    >
+                      i
+                    </button>
+                  </span>
                   <small>{itemLabel}</small>
                 </div>
                 <strong>{item.value}</strong>
@@ -94,8 +144,9 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
                 </div>
                 <div className="valuation-metric-foot">
                   <span>{item.helper}</span>
-                  <b>{isBurden ? `${formatScore(itemScore)}점` : `${formatScore(itemScore)}점`}</b>
+                  <b>{`${formatScore(itemScore)}점`}</b>
                 </div>
+                {isGuideOpen ? <MetricGuide metric={item.label} /> : null}
               </div>
             )
           })}
@@ -111,6 +162,25 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
         </dl>
       </div>
     </section>
+  )
+}
+
+function MetricGuide({ metric }) {
+  const guide = METRIC_GUIDES[metric]
+  if (!guide) return null
+
+  return (
+    <div className="valuation-guide-popover" role="dialog" aria-label={`${metric} 설명`}>
+      <p>{guide.summary}</p>
+      <dl>
+        {guide.examples.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   )
 }
 
@@ -137,7 +207,7 @@ function getValuationBurden(value, benchmark) {
 function getPerHelper(value) {
   const number = toNumber(value)
   if (number === null) return '이익 기준 확인 필요'
-  if (number >= VALUATION_BENCHMARKS.per.upperQuartile) return '동종 분포 상단, 고평가 부담'
+  if (number >= VALUATION_BENCHMARKS.per.upperQuartile) return '분포 상단, 고평가 부담'
   if (number >= VALUATION_BENCHMARKS.per.median) return '중간값보다 높은 가격'
   return '이익 대비 낮은 가격'
 }
