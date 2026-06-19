@@ -64,11 +64,11 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
                             toDouble(columns.get(15)),
                             toDouble(columns.get(16)),
                             toDouble(columns.get(17)),
-                            toInteger(columns.get(18)),
-                            toInteger(columns.get(19)),
-                            toInteger(columns.get(20)),
-                            toInteger(columns.get(21)),
-                            toInteger(columns.get(22)));
+                            toDouble(columns.get(18)),
+                            toDouble(columns.get(19)),
+                            toDouble(columns.get(20)),
+                            toDouble(columns.get(21)),
+                            toDouble(columns.get(22)));
                     loadedMetrics.put(normalize(metrics.symbol()), metrics);
                 }
             }
@@ -105,11 +105,6 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
         } catch (NumberFormatException exception) {
             return null;
         }
-    }
-
-    private Integer toInteger(String value) {
-        Double number = toDouble(value);
-        return number == null ? null : number.intValue();
     }
 
     private String normalize(String value) {

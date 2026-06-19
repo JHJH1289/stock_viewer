@@ -11,17 +11,48 @@ const rangeOptions = [
 function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChange }) {
   const chart = useMemo(() => createChart(history?.points ?? [], quote.currency), [history, quote.currency])
   const [activeIndex, setActiveIndex] = useState(chart.defaultIndex)
+  const [selection, setSelection] = useState(null)
   const safeActiveIndex = activeIndex < chart.points.length ? activeIndex : chart.defaultIndex
   const activePoint = chart.points[safeActiveIndex] ?? chart.points[chart.defaultIndex]
+  const selectedRange = createSelectedRange(selection, chart, quote.currency)
+
+  function getPointerIndex(event) {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const ratio = (event.clientX - bounds.left) / bounds.width
+    const clampedRatio = Math.max(0, Math.min(1, ratio))
+    return Math.round(clampedRatio * (chart.points.length - 1))
+  }
 
   function handlePointerMove(event) {
     if (chart.points.length === 0) return
 
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const ratio = (event.clientX - bounds.left) / bounds.width
-    const clampedRatio = Math.max(0, Math.min(1, ratio))
-    const nextIndex = Math.round(clampedRatio * (chart.points.length - 1))
+    const nextIndex = getPointerIndex(event)
     setActiveIndex(nextIndex)
+    if (selection?.isDragging) {
+      setSelection((current) => current ? { ...current, endIndex: nextIndex } : current)
+    }
+  }
+
+  function handlePointerDown(event) {
+    if (chart.points.length === 0) return
+
+    const nextIndex = getPointerIndex(event)
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    setActiveIndex(nextIndex)
+    setSelection({
+      startIndex: nextIndex,
+      endIndex: nextIndex,
+      isDragging: true,
+    })
+  }
+
+  function handlePointerUp(event) {
+    if (!selection?.isDragging) return
+
+    const nextIndex = getPointerIndex(event)
+    event.currentTarget.releasePointerCapture?.(event.pointerId)
+    setActiveIndex(nextIndex)
+    setSelection((current) => current ? { ...current, endIndex: nextIndex, isDragging: false } : current)
   }
 
   return (
@@ -55,8 +86,15 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
             className="detail-chart"
             viewBox={`0 0 ${chart.width} ${chart.height}`}
             role="img"
+            onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
-            onPointerLeave={() => setActiveIndex(chart.defaultIndex)}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={() => setSelection((current) => current ? { ...current, isDragging: false } : current)}
+            onPointerLeave={() => {
+              if (!selection?.isDragging) {
+                setActiveIndex(chart.defaultIndex)
+              }
+            }}
           >
             <title>{quote.symbol} price chart</title>
             <defs>
@@ -75,7 +113,7 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
                   y1={line.y}
                   y2={line.y}
                 />
-                <text className="detail-chart-label" x={chart.padding.left - 10} y={line.y + 4}>
+                <text className="detail-chart-label" x={chart.padding.left - 12} y={line.y + 4}>
                   {formatAxisPrice(line.value, quote.currency)}
                 </text>
               </g>
@@ -98,6 +136,49 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
 
             <path className="detail-area-fill" d={chart.areaPath} />
             <path className="detail-area-line" d={chart.linePath} />
+
+            {selectedRange ? (
+              <g>
+                <rect
+                  className={`detail-selection-area ${selectedRange.delta >= 0 ? 'is-up' : 'is-down'}`}
+                  x={selectedRange.x}
+                  y={chart.padding.top}
+                  width={selectedRange.width}
+                  height={chart.height - chart.padding.top - chart.padding.bottom}
+                  rx="3"
+                />
+                <line
+                  className="detail-selection-line"
+                  x1={selectedRange.start.x}
+                  x2={selectedRange.start.x}
+                  y1={chart.padding.top}
+                  y2={chart.height - chart.padding.bottom}
+                />
+                <line
+                  className="detail-selection-line"
+                  x1={selectedRange.end.x}
+                  x2={selectedRange.end.x}
+                  y1={chart.padding.top}
+                  y2={chart.height - chart.padding.bottom}
+                />
+                <circle className="detail-selection-dot" cx={selectedRange.start.x} cy={selectedRange.start.y} r="4.5" />
+                <circle className="detail-selection-dot" cx={selectedRange.end.x} cy={selectedRange.end.y} r="4.5" />
+                <g transform={`translate(${selectedRange.tooltipX}, ${chart.padding.top + 34})`}>
+                  <rect
+                    className={`detail-selection-tooltip-bg ${selectedRange.delta >= 0 ? 'is-up' : 'is-down'}`}
+                    width="204"
+                    height="46"
+                    rx="6"
+                  />
+                  <text className="detail-selection-tooltip-text" x="10" y="18">
+                    {selectedRange.deltaLabel}
+                  </text>
+                  <text className="detail-selection-tooltip-subtext" x="10" y="34">
+                    {selectedRange.periodLabel}
+                  </text>
+                </g>
+              </g>
+            ) : null}
 
             <line
               className="detail-hover-line"
@@ -129,6 +210,38 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
   )
 }
 
+function createSelectedRange(selection, chart, currency) {
+  if (!selection || chart.points.length === 0) {
+    return null
+  }
+
+  const startIndex = Math.max(0, Math.min(selection.startIndex, chart.points.length - 1))
+  const endIndex = Math.max(0, Math.min(selection.endIndex, chart.points.length - 1))
+  const start = chart.points[startIndex]
+  const end = chart.points[endIndex]
+  if (!start || !end) {
+    return null
+  }
+
+  const delta = end.close - start.close
+  const deltaPercent = start.close === 0 ? 0 : (delta / start.close) * 100
+  const direction = delta >= 0 ? '+' : ''
+  const x = Math.min(start.x, end.x)
+  const width = Math.max(Math.abs(end.x - start.x), 3)
+  const tooltipX = Math.min(Math.max((start.x + end.x) / 2 - 102, chart.padding.left), chart.width - chart.padding.right - 204)
+
+  return {
+    start,
+    end,
+    delta,
+    x,
+    width,
+    tooltipX,
+    deltaLabel: `${direction}${formatPrice(delta, currency)} (${direction}${deltaPercent.toFixed(2)}%)`,
+    periodLabel: `${start.label} → ${end.label}`,
+  }
+}
+
 function createChart(rawPoints, currency) {
   const width = 880
   const height = 280
@@ -136,7 +249,7 @@ function createChart(rawPoints, currency) {
     top: 18,
     right: 22,
     bottom: 34,
-    left: 58,
+    left: 76,
   }
   const points = rawPoints
     .filter((point) => Number.isFinite(Number(point.close)))

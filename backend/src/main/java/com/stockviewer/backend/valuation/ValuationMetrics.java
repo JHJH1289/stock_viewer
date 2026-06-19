@@ -19,9 +19,9 @@ public record ValuationMetrics(
         Double pbr,
         Double roe,
         Double debtRatio,
-        Integer perScore,
-        Integer pbrScore,
-        Integer roeScore,
-        Integer debtScore,
-        Integer valuationScore) {
+        Double perScore,
+        Double pbrScore,
+        Double roeScore,
+        Double debtScore,
+        Double valuationScore) {
 }
