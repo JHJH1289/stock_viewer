@@ -75,7 +75,7 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
                   y1={line.y}
                   y2={line.y}
                 />
-                <text className="detail-chart-label" x={chart.padding.left - 10} y={line.y + 4}>
+                <text className="detail-chart-label" x={chart.padding.left - 12} y={line.y + 4}>
                   {formatAxisPrice(line.value, quote.currency)}
                 </text>
               </g>
@@ -136,7 +136,7 @@ function createChart(rawPoints, currency) {
     top: 18,
     right: 22,
     bottom: 34,
-    left: 58,
+    left: 76,
   }
   const points = rawPoints
     .filter((point) => Number.isFinite(Number(point.close)))
