@@ -2,9 +2,11 @@ package com.stockviewer.backend.Board;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
-    List<Post> findBySymbolIsNullOrderByCreatedAtDesc();
+    Page<Post> findBySymbolIsNullOrderByCreatedAtDesc(Pageable pageable);
     List<Post> findBySymbolOrderByCreatedAtDesc(String symbol);
 }

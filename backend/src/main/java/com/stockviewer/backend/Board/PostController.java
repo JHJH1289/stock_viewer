@@ -4,6 +4,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.web.bind.annotation.RequestParam;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,20 +34,25 @@ public class PostController {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
 
+    record PagedResponse(List<PostResponse> content, int totalPages, long totalElements) {}
+
     @GetMapping
-    public List<PostResponse> getGeneralPosts() {
-        return postRepository.findBySymbolIsNullOrderByCreatedAtDesc()
-                .stream().map(PostResponse::from).toList();
+    public PagedResponse getGeneralPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        var result = postRepository.findBySymbolIsNullOrderByCreatedAtDesc(PageRequest.of(page, size))
+                .map(PostResponse::from);
+        return new PagedResponse(result.getContent(), result.getTotalPages(), result.getTotalElements());
     }
 
     @GetMapping("/stock/{symbol}")
-    public List<PostResponse> getStockPosts(@PathVariable String symbol) {
+    public List<PostResponse> getStockPosts(@PathVariable("symbol") String symbol) {
         return postRepository.findBySymbolOrderByCreatedAtDesc(symbol.toUpperCase())
                 .stream().map(PostResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public PostResponse getPost(@PathVariable Long id) {
+    public PostResponse getPost(@PathVariable("id") Long id) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
         return PostResponse.from(post);
@@ -69,7 +78,7 @@ public class PostController {
 
     @PostMapping("/stock/{symbol}")
     public PostResponse createStockPost(
-            @PathVariable String symbol,
+            @PathVariable("symbol") String symbol,
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PostRequest request) {
         User user = resolveUser(userDetails);
@@ -88,7 +97,7 @@ public class PostController {
 
     @PutMapping("/{id}")
     public PostResponse updatePost(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody PostRequest request) {
         User user = resolveUser(userDetails);
@@ -104,7 +113,7 @@ public class PostController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
         User user = resolveUser(userDetails);
         Post post = postRepository.findById(id)

@@ -1793,3 +1793,39 @@
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px 0 4px;
+}
+
+.page-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--heading);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.page-btn:not(:disabled):hover {
+  border-color: #94a3b8;
+}
+
+.page-info {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+  min-width: 60px;
+  text-align: center;
+}

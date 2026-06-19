@@ -13,8 +13,9 @@ async function parseJsonResponse(response) {
   }
 }
 
-export async function fetchGeneralPosts() {
-  const response = await fetch(`${apiBaseUrl}/posts`)
+export async function fetchGeneralPosts(page = 0, size = 10) {
+  const params = new URLSearchParams({ page, size })
+  const response = await fetch(`${apiBaseUrl}/posts?${params}`)
   if (!response.ok) throw new Error('게시글을 불러오지 못했습니다.')
   return response.json()
 }
