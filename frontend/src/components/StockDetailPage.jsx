@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
 import ValuationMetricsPanel from './ValuationMetricsPanel'
+import StockBoard from './StockBoard'
 import { fetchStockHistory, fetchStockQuote, fetchValuationMetrics } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
 
@@ -17,6 +18,7 @@ function StockDetailPage() {
   const [error, setError] = useState('')
   const [historyError, setHistoryError] = useState('')
   const timestamp = formatDetailTimestamp(new Date())
+  const currentUsername = window.localStorage.getItem('username')
 
   useEffect(() => {
     document.body.classList.add('is-detail-page')
@@ -159,6 +161,7 @@ function StockDetailPage() {
           <ValuationMetricsPanel metrics={valuationMetrics} currency={quote.currency} />
         </section>
       ) : null}
+      <StockBoard symbol={symbol.toUpperCase()} currentUsername={currentUsername} />
     </main>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function AppHeader({
   health,
@@ -14,6 +14,7 @@ function AppHeader({
 }) {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const userMenuRef = useRef(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -57,6 +58,7 @@ function AppHeader({
           <span className={theme === 'light' ? 'theme-icon is-light' : 'theme-icon is-dark'} />
           {theme === 'light' ? 'Light' : 'Dark'}
         </button>
+        <button className="auth-action" type="button" onClick={() => navigate('/board')}>게시판</button>
         <button className="icon-button" type="button" onClick={onRefresh} aria-label="Refresh">
           <span className={isLoading ? 'refresh-symbol is-spinning' : 'refresh-symbol'} />
         </button>
