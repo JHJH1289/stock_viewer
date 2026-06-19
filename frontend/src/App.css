@@ -1116,6 +1116,11 @@
   color: #be123c;
 }
 
+.valuation-metric.is-expensive .valuation-metric-topline small {
+  background: #ffe4e6;
+  color: #be123c;
+}
+
 .valuation-metric strong {
   color: #111827;
   font-size: 20px;
@@ -1136,11 +1141,23 @@
   background: #2563eb;
 }
 
+.valuation-meter.is-burden {
+  background: linear-gradient(90deg, #dcfce7 0%, #fef3c7 48%, #ffe4e6 100%);
+}
+
+.valuation-meter.is-burden span {
+  background: linear-gradient(90deg, #22c55e 0%, #f59e0b 52%, #dc2626 100%);
+}
+
 .valuation-metric.is-good .valuation-meter span {
   background: #059669;
 }
 
 .valuation-metric.is-low .valuation-meter span {
+  background: #dc2626;
+}
+
+.valuation-metric.is-expensive .valuation-meter span {
   background: #dc2626;
 }
 

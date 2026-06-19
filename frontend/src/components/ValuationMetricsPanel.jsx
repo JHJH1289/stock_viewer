@@ -1,5 +1,10 @@
 import { formatPrice } from '../utils/market'
 
+const VALUATION_BENCHMARKS = {
+  per: { median: 11.35, upperQuartile: 27.76, high: 77.55 },
+  pbr: { median: 0.84, upperQuartile: 1.89, high: 4.98 },
+}
+
 function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
   if (!metrics) return null
 
@@ -11,25 +16,31 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
       label: 'PER',
       value: formatRatio(metrics.per, '배'),
       score: metrics.perScore,
-      helper: '낮을수록 유리',
+      visualType: 'burden',
+      burden: getValuationBurden(metrics.per, VALUATION_BENCHMARKS.per),
+      helper: getPerHelper(metrics.per),
     },
     {
       label: 'PBR',
       value: formatRatio(metrics.pbr, '배'),
       score: metrics.pbrScore,
-      helper: '낮을수록 유리',
+      visualType: 'burden',
+      burden: getValuationBurden(metrics.pbr, VALUATION_BENCHMARKS.pbr),
+      helper: getPbrHelper(metrics.pbr),
     },
     {
       label: 'ROE',
       value: formatPercentValue(metrics.roe),
       score: metrics.roeScore,
-      helper: '높을수록 유리',
+      visualType: 'score',
+      helper: '높을수록 수익성 우수',
     },
     {
       label: '부채비율',
       value: formatPercentValue(metrics.debtRatio),
       score: metrics.debtScore,
-      helper: '낮을수록 안정',
+      visualType: 'score',
+      helper: '낮을수록 재무 안정',
     },
   ]
 
@@ -64,22 +75,26 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
         <div className="valuation-metric-grid">
           {metricItems.map((item) => {
             const itemScore = toNumber(item.score)
-            const itemPercent = clamp(((itemScore ?? 0) / 25) * 100, 0, 100)
-            const itemTone = getMetricTone(itemScore)
+            const isBurden = item.visualType === 'burden'
+            const itemPercent = isBurden
+              ? item.burden.percent
+              : clamp(((itemScore ?? 0) / 25) * 100, 0, 100)
+            const itemTone = isBurden ? item.burden.tone : getMetricTone(itemScore)
+            const itemLabel = isBurden ? item.burden.label : getMetricLabel(itemScore)
 
             return (
               <div className={`valuation-metric ${itemTone}`} key={item.label}>
                 <div className="valuation-metric-topline">
                   <span>{item.label}</span>
-                  <small>{getMetricLabel(itemScore)}</small>
+                  <small>{itemLabel}</small>
                 </div>
                 <strong>{item.value}</strong>
-                <div className="valuation-meter" aria-hidden="true">
+                <div className={`valuation-meter ${isBurden ? 'is-burden' : 'is-score'}`} aria-hidden="true">
                   <span style={{ width: `${itemPercent}%` }} />
                 </div>
                 <div className="valuation-metric-foot">
                   <span>{item.helper}</span>
-                  <b>{`${formatPlain(itemScore)}점`}</b>
+                  <b>{isBurden ? '부담' : `${formatPlain(itemScore)}점`}</b>
                 </div>
               </div>
             )
@@ -97,6 +112,43 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
       </div>
     </section>
   )
+}
+
+function getValuationBurden(value, benchmark) {
+  const number = toNumber(value)
+  if (number === null || number <= 0) {
+    return { percent: 0, tone: 'is-low', label: '결측' }
+  }
+
+  const percent = clamp((number / benchmark.high) * 100, 4, 100)
+  if (number >= benchmark.high) {
+    return { percent, tone: 'is-expensive', label: '매우 높음' }
+  }
+  if (number >= benchmark.upperQuartile) {
+    return { percent, tone: 'is-expensive', label: '주의' }
+  }
+  if (number >= benchmark.median) {
+    return { percent, tone: 'is-mid', label: '보통' }
+  }
+
+  return { percent, tone: 'is-good', label: '낮음' }
+}
+
+function getPerHelper(value) {
+  const number = toNumber(value)
+  if (number === null) return '이익 기준 확인 필요'
+  if (number >= VALUATION_BENCHMARKS.per.upperQuartile) return '동종 분포 상단, 고평가 부담'
+  if (number >= VALUATION_BENCHMARKS.per.median) return '중간값보다 높은 가격'
+  return '이익 대비 낮은 가격'
+}
+
+function getPbrHelper(value) {
+  const number = toNumber(value)
+  if (number === null) return '자본 기준 확인 필요'
+  if (number >= VALUATION_BENCHMARKS.pbr.high) return '상위권 고PBR, 강한 주의'
+  if (number >= VALUATION_BENCHMARKS.pbr.upperQuartile) return '자본 대비 비싼 가격'
+  if (number >= VALUATION_BENCHMARKS.pbr.median) return '중간값보다 높은 가격'
+  return '자본 대비 낮은 가격'
 }
 
 function toNumber(value) {
