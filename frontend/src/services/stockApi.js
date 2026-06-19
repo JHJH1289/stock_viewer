@@ -77,6 +77,20 @@ export async function fetchStockHistory(symbol, range = '1mo') {
   return response.json()
 }
 
+export async function fetchValuationMetrics(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/valuation/${encodeURIComponent(symbol)}`)
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to load valuation metrics.')
+  }
+
+  return response.json()
+}
+
 export async function signup({ username, email, password }) {
   const response = await fetch(`${apiBaseUrl}/auth/signup`, {
     method: 'POST',

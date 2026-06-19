@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
-import { fetchStockHistory, fetchStockQuote } from '../services/stockApi'
+import ValuationMetricsPanel from './ValuationMetricsPanel'
+import { fetchStockHistory, fetchStockQuote, fetchValuationMetrics } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
 
 function StockDetailPage() {
@@ -12,6 +13,7 @@ function StockDetailPage() {
   const [historyRange, setHistoryRange] = useState('1d')
   const [isLoading, setIsLoading] = useState(true)
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
+  const [valuationMetrics, setValuationMetrics] = useState(null)
   const [error, setError] = useState('')
   const [historyError, setHistoryError] = useState('')
   const timestamp = formatDetailTimestamp(new Date())
@@ -30,6 +32,7 @@ function StockDetailPage() {
     async function loadQuote() {
       setIsLoading(true)
       setHistory(null)
+      setValuationMetrics(null)
       setHistoryError('')
 
       try {
@@ -54,6 +57,31 @@ function StockDetailPage() {
       cancelled = true
     }
   }, [symbol])
+
+  useEffect(() => {
+    if (!quote || quote.currency !== 'KRW') return
+
+    let cancelled = false
+
+    async function loadValuationMetrics() {
+      try {
+        const nextMetrics = await fetchValuationMetrics(quote.symbol)
+        if (!cancelled) {
+          setValuationMetrics(nextMetrics)
+        }
+      } catch {
+        if (!cancelled) {
+          setValuationMetrics(null)
+        }
+      }
+    }
+
+    loadValuationMetrics()
+
+    return () => {
+      cancelled = true
+    }
+  }, [quote])
 
   useEffect(() => {
     if (!quote) return
@@ -128,6 +156,7 @@ function StockDetailPage() {
             error={historyError}
             onRangeChange={setHistoryRange}
           />
+          <ValuationMetricsPanel metrics={valuationMetrics} currency={quote.currency} />
         </section>
       ) : null}
     </main>
