@@ -91,6 +91,22 @@ export async function fetchValuationMetrics(symbol) {
   return response.json()
 }
 
+export async function fetchValuationMetricsHistory(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/valuation/${encodeURIComponent(symbol)}/history`)
+
+  if (response.status === 404) {
+    const metrics = await fetchValuationMetrics(symbol)
+    return metrics ? [metrics] : []
+  }
+
+  if (!response.ok) {
+    const metrics = await fetchValuationMetrics(symbol)
+    return metrics ? [metrics] : []
+  }
+
+  return response.json()
+}
+
 export async function signup({ username, email, password }) {
   const response = await fetch(`${apiBaseUrl}/auth/signup`, {
     method: 'POST',

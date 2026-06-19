@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { formatPrice } from '../utils/market'
 
+const SCORE_GUIDE_KEY = 'valuation-score'
+
 const VALUATION_BENCHMARKS = {
   per: { median: 11.35, upperQuartile: 27.76, high: 77.55 },
   pbr: { median: 0.84, upperQuartile: 1.89, high: 4.98 },
@@ -41,7 +43,13 @@ const METRIC_GUIDES = {
   },
 }
 
-function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
+function ValuationMetricsPanel({
+  metrics,
+  metricsHistory = [],
+  selectedMetricsKey = '',
+  currency = 'KRW',
+  onMetricsChange,
+}) {
   const [openGuide, setOpenGuide] = useState(null)
 
   if (!metrics) return null
@@ -49,6 +57,7 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
   const score = toNumber(metrics.valuationScore)
   const scorePercent = clamp(score ?? 0, 0, 100)
   const scoreTone = getScoreTone(score)
+  const isScoreGuideOpen = openGuide === SCORE_GUIDE_KEY
   const metricItems = [
     {
       label: 'PER',
@@ -81,6 +90,12 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
       helper: '낮을수록 재무 안정',
     },
   ]
+  const scoreParts = [
+    { label: 'PER', value: metrics.perScore },
+    { label: 'PBR', value: metrics.pbrScore },
+    { label: 'ROE', value: metrics.roeScore },
+    { label: '부채', value: metrics.debtScore },
+  ]
 
   const financialItems = [
     { label: '시가총액', value: formatLargeMoney(metrics.marketCap, currency) },
@@ -94,20 +109,61 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
   return (
     <section className="valuation-panel" aria-label="Valuation metrics">
       <div className={`valuation-score-block ${scoreTone}`}>
-        <div className="valuation-score-ring" style={{ '--score': `${scorePercent}%` }}>
-          <strong>{formatScore(score)}</strong>
-          <span>/100</span>
+        <div className="valuation-score-topline">
+          <span className="valuation-score-title">
+            가치 점수
+            <button
+              type="button"
+              className="valuation-info-button"
+              aria-expanded={isScoreGuideOpen}
+              aria-label="가치 점수 설명"
+              onClick={() => setOpenGuide(isScoreGuideOpen ? null : SCORE_GUIDE_KEY)}
+            >
+              i
+            </button>
+          </span>
+          <small>{getScoreLabel(score)}</small>
         </div>
-        <div className="valuation-score-copy">
-          <span>가치 점수</span>
-          <p>{getScoreLabel(score)}</p>
+
+        <div className="valuation-score-main">
+          <div className="valuation-score-ring" style={{ '--score': `${scorePercent}%` }}>
+            <strong>{formatScore(score)}</strong>
+            <span>/100</span>
+          </div>
+          <p className="valuation-score-formula">
+            4개 지표를 각각 25점 만점으로 환산해 합산합니다.
+          </p>
         </div>
+
+        <dl className="valuation-score-breakdown" aria-label="가치 점수 구성">
+          {scoreParts.map((part) => (
+            <div key={part.label}>
+              <dt>{part.label}</dt>
+              <dd>{`${formatScore(part.value)}점`}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {isScoreGuideOpen ? <ScoreGuide /> : null}
       </div>
 
       <div className="valuation-content">
         <div className="valuation-heading">
           <h2>가치 지표</h2>
-          <span>{`${metrics.year ?? '-'} 결산 · ${metrics.priceDate ?? '-'}`}</span>
+          <label className="valuation-period-select">
+            <span>결산 기준</span>
+            <select
+              value={selectedMetricsKey || getMetricsKey(metrics)}
+              onChange={(event) => onMetricsChange?.(event.target.value)}
+              disabled={!onMetricsChange}
+            >
+              {(metricsHistory.length > 0 ? metricsHistory : [metrics]).map((item) => (
+                <option value={getMetricsKey(item)} key={getMetricsKey(item)}>
+                  {formatMetricsPeriod(item)}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         <div className="valuation-metric-grid">
@@ -162,6 +218,35 @@ function ValuationMetricsPanel({ metrics, currency = 'KRW' }) {
         </dl>
       </div>
     </section>
+  )
+}
+
+function getMetricsKey(metrics) {
+  return `${metrics.year ?? '-'}|${metrics.fiscalDate ?? '-'}|${metrics.priceDate ?? '-'}`
+}
+
+function formatMetricsPeriod(metrics) {
+  return `${metrics.year ?? '-'} 결산 · ${metrics.priceDate ?? '-'}`
+}
+
+function ScoreGuide() {
+  return (
+    <div className="valuation-guide-popover is-score-guide" role="dialog" aria-label="가치 점수 설명">
+      <p>
+        점수는 전체 기업 분포 안에서의 상대 위치를 사용합니다. PER/PBR/부채비율은 낮을수록,
+        ROE는 높을수록 높은 점수를 받습니다.
+      </p>
+      <dl>
+        <div>
+          <dt>구성</dt>
+          <dd>4개 지표 × 25점</dd>
+        </div>
+        <div>
+          <dt>총점</dt>
+          <dd>최대 100점</dd>
+        </div>
+      </dl>
+    </div>
   )
 }
 
