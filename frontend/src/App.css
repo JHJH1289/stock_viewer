@@ -853,6 +853,8 @@
   height: auto;
   min-height: 280px;
   background: #ffffff;
+  cursor: crosshair;
+  user-select: none;
   touch-action: none;
 }
 
@@ -923,6 +925,57 @@
   fill: #f28b82;
   stroke: #ffffff;
   stroke-width: 2;
+}
+
+.detail-selection-area {
+  opacity: 0.18;
+}
+
+.detail-selection-area.is-up {
+  fill: #ef4444;
+}
+
+.detail-selection-area.is-down {
+  fill: #2563eb;
+}
+
+.detail-selection-line {
+  stroke: #475569;
+  stroke-dasharray: 4 4;
+  stroke-width: 1.4;
+}
+
+.detail-selection-dot {
+  fill: #111827;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.detail-selection-tooltip-bg {
+  fill: #111827;
+}
+
+.detail-selection-tooltip-bg.is-up {
+  fill: #991b1b;
+}
+
+.detail-selection-tooltip-bg.is-down {
+  fill: #1d4ed8;
+}
+
+.detail-selection-tooltip-text,
+.detail-selection-tooltip-subtext {
+  fill: #ffffff;
+  font-weight: 900;
+}
+
+.detail-selection-tooltip-text {
+  font-size: 12px;
+}
+
+.detail-selection-tooltip-subtext {
+  font-size: 11px;
+  opacity: 0.86;
 }
 
 .detail-tooltip-bg {
