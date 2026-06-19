@@ -72,3 +72,39 @@ export async function deletePost(id) {
   })
   if (!response.ok) throw new Error('글 삭제에 실패했습니다.')
 }
+
+export async function fetchComments(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${postId}/comments`)
+  if (!response.ok) throw new Error('댓글을 불러오지 못했습니다.')
+  return response.json()
+}
+
+export async function createComment({ postId, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${postId}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ content }),
+  })
+  const data = await parseJsonResponse(response)
+  if (!response.ok) throw new Error(data.message ?? '댓글 작성에 실패했습니다.')
+  return data
+}
+
+export async function updateComment({ postId, commentId, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${postId}/comments/${commentId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ content }),
+  })
+  const data = await parseJsonResponse(response)
+  if (!response.ok) throw new Error(data.message ?? '댓글 수정에 실패했습니다.')
+  return data
+}
+
+export async function deleteComment({ postId, commentId }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${postId}/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!response.ok) throw new Error('댓글 삭제에 실패했습니다.')
+}

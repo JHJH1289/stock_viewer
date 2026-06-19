@@ -39,10 +39,7 @@ function App() {
         }
       />
       <Route path="/mypage" element={<MyPage />} />
-      <Route
-        path="/board"
-        element={<GeneralBoard currentUsername={window.localStorage.getItem('username')} />}
-      />
+      <Route path="/board" element={<GeneralBoard />} />
       <Route path="/:symbol" element={<StockDetailPage />} />
     </Routes>
   )

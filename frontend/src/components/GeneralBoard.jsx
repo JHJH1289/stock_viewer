@@ -6,7 +6,8 @@ import PostForm from './PostForm'
 
 const PAGE_SIZE = 10
 
-function GeneralBoard({ currentUsername }) {
+function GeneralBoard() {
+  const currentUsername = window.localStorage.getItem('username')
   const [posts, setPosts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [page, setPage] = useState(0)
@@ -15,6 +16,9 @@ function GeneralBoard({ currentUsername }) {
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
+  
+  // 로그인 여부를 실시간으로 계산 (currentUsername이 변경되면 즉시 업데이트됨)
+  const isLoggedIn = !!currentUsername;
 
   useEffect(() => {
     let cancelled = false
@@ -23,13 +27,11 @@ function GeneralBoard({ currentUsername }) {
       setError('')
       try {
         const data = await fetchGeneralPosts(page, PAGE_SIZE)
-        console.log('[GeneralBoard] API response:', data)
         if (!cancelled) {
           setPosts(data.content ?? data ?? [])
           setTotalPages(data.totalPages ?? 1)
         }
       } catch (err) {
-        console.error('[GeneralBoard] API error:', err)
         if (!cancelled) setError(err.message ?? '게시글을 불러오지 못했습니다.')
       } finally {
         if (!cancelled) setIsLoading(false)
@@ -57,15 +59,23 @@ function GeneralBoard({ currentUsername }) {
       <div className="board-container">
         <div className="board-heading">
           <h2>전체 게시판</h2>
-          {currentUsername && (
-            <button className="auth-action primary" onClick={() => setShowForm(true)}>글 작성</button>
+          {isLoggedIn && (
+            <button 
+              className="auth-action primary" 
+              onClick={() => setShowForm(true)}
+            >
+              글 작성
+            </button>
           )}
         </div>
+
         {isLoading && <div className="board-empty">불러오는 중...</div>}
         {error && <div className="board-empty" style={{ color: 'red' }}>{error}</div>}
+        
         {!isLoading && !error && posts.length === 0 && (
           <div className="board-empty">첫 번째 글을 작성해보세요.</div>
         )}
+
         <ul className="post-list">
           {posts.map((post) => (
             <li key={post.postId} className="post-item" onClick={() => setSelectedPost(post)}>
@@ -77,30 +87,22 @@ function GeneralBoard({ currentUsername }) {
             </li>
           ))}
         </ul>
+
         {totalPages > 1 && (
           <div className="pagination">
-            <button
-              className="page-btn"
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page === 0}
-            >
-              이전
-            </button>
+            <button className="page-btn" onClick={() => setPage((p) => p - 1)} disabled={page === 0}>이전</button>
             <span className="page-info">{page + 1} / {totalPages}</span>
-            <button
-              className="page-btn"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= totalPages - 1}
-            >
-              다음
-            </button>
+            <button className="page-btn" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages - 1}>다음</button>
           </div>
         )}
+
         {showForm && <PostForm onSubmit={handleCreate} onClose={() => setShowForm(false)} />}
+        
         {selectedPost && (
           <PostDetail
             post={selectedPost}
             currentUsername={currentUsername}
+            isLoggedIn={isLoggedIn} 
             onClose={() => setSelectedPost(null)}
             onDeleted={refresh}
             onUpdated={(updated) => {

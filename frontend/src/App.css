@@ -2052,6 +2052,139 @@
   border-top: 1px solid var(--border);
 }
 
+/* ===== 댓글 ===== */
+
+.comments-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.comments-heading {
+  margin: 0 0 12px;
+  color: var(--heading);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.comments-empty,
+.comments-login-hint {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.comment-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.comment-item {
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.comment-author {
+  color: var(--heading);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.comment-date {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.comment-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.comment-action-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.comment-action-btn:hover {
+  background: var(--subtle);
+  color: var(--heading);
+}
+
+.comment-action-btn.danger:hover {
+  color: #dc2626;
+}
+
+.comment-content {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.comment-edit-form {
+  display: grid;
+  gap: 6px;
+}
+
+.comment-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.comment-form {
+  display: grid;
+  gap: 8px;
+}
+
+.comment-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--heading);
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.comment-textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.auth-action.small {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  align-self: flex-end;
+}
+
 .pagination {
   display: flex;
   align-items: center;

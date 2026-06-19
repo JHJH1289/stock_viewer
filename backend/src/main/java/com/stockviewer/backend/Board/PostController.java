@@ -6,7 +6,6 @@ import java.util.Objects;
 
 import org.springframework.web.bind.annotation.RequestParam;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -38,8 +37,8 @@ public class PostController {
 
     @GetMapping
     public PagedResponse getGeneralPosts(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         var result = postRepository.findBySymbolIsNullOrderByCreatedAtDesc(PageRequest.of(page, size))
                 .map(PostResponse::from);
         return new PagedResponse(result.getContent(), result.getTotalPages(), result.getTotalElements());
