@@ -169,6 +169,93 @@ export async function fetchTradeOrders() {
   return response.json()
 }
 
+export async function fetchBoardPosts({ page = 0, size = 5 } = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  const response = await fetch(`${apiBaseUrl}/posts?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchStockBoardPosts(symbol) {
+  const response = await fetch(`${apiBaseUrl}/posts/stock/${encodeURIComponent(symbol)}`)
+
+  if (!response.ok) {
+    throw new Error('종목 게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchMarketBoardPosts(marketCode, { size = 5 } = {}) {
+  const params = new URLSearchParams({
+    size: String(size),
+  })
+  const response = await fetch(`${apiBaseUrl}/posts/markets/${encodeURIComponent(marketCode)}?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('시장 게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchBoardPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`)
+
+  if (!response.ok) {
+    throw new Error('게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function createStockBoardPost(symbol, { title, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/stock/${encodeURIComponent(symbol)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ title, content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '게시글 작성에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function fetchPostComments(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments`)
+
+  if (!response.ok) {
+    throw new Error('댓글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function createPostComment(postId, { content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '댓글 작성에 실패했습니다.')
+  }
+
+  return data
+}
+
 export async function buyStock({ symbol, stockName, marketCode, quantity, price }) {
   const response = await fetch(`${apiBaseUrl}/trading/buy`, {
     method: 'POST',

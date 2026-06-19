@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
+import StockBoardPanel from './StockBoardPanel'
 import ValuationMetricsPanel from './ValuationMetricsPanel'
 import { fetchStockHistory, fetchStockQuote, fetchValuationMetricsHistory } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
@@ -199,6 +200,7 @@ function StockDetailPage() {
             currency={quote.currency}
             onMetricsChange={handleValuationChange}
           />
+          <StockBoardPanel quote={quote} />
         </section>
       ) : null}
     </main>

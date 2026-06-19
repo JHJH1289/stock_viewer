@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import AccountSummaryPanel from './components/AccountSummaryPanel'
 import AppHeader from './components/AppHeader'
 import AuthModal from './components/AuthModal'
-import IntegrationStatusList from './components/IntegrationStatusList'
 import MarketControls from './components/MarketControls'
-import PortfolioPanel from './components/PortfolioPanel'
+import MarketBoardSlots from './components/MarketBoardSlots'
+import PostDetailPage from './components/PostDetailPage'
 import QuoteTable from './components/QuoteTable'
 import StockDetailPage from './components/StockDetailPage'
 import StockSearchResults from './components/StockSearchResults'
@@ -38,6 +39,7 @@ function App() {
         }
       />
       <Route path="/mypage" element={<MyPage />} />
+      <Route path="/posts/:postId" element={<PostDetailPage />} />
       <Route path="/:symbol" element={<StockDetailPage />} />
     </Routes>
   )
@@ -77,22 +79,11 @@ function DashboardPage({ theme, onThemeChange }) {
 
   const handleBuy = (stock) => setTradeTarget({ stock, mode: 'buy' })
 
-  const handleSell = (holding) => {
-    const live = stocks.find(s => s.symbol === holding.symbol)
-    const stock = live ?? {
-      symbol: holding.symbol,
-      name: holding.stockName,
-      price: holding.avgBuyPrice,
-      currency: holding.marketCode === 'KRX' ? 'KRW' : 'USD',
-      market: holding.marketCode,
-    }
-    setTradeTarget({ stock, mode: 'sell' })
-  }
-
   return (
     <main className="app-shell">
       <AppHeader
         health={health}
+        integrations={integrations}
         isLoading={isLoading}
         theme={theme}
         onRefresh={refresh}
@@ -107,7 +98,7 @@ function DashboardPage({ theme, onThemeChange }) {
         }}
       />
       <TickerStrip stocks={topMovers} />
-      <IntegrationStatusList integrations={integrations} />
+      <AccountSummaryPanel isLoggedIn={!!currentUser} refreshKey={portfolioKey} />
       <MarketControls
         query={query}
         direction={direction}
@@ -132,14 +123,7 @@ function DashboardPage({ theme, onThemeChange }) {
         isLoggedIn={!!currentUser}
         onBuy={handleBuy}
       />
-
-      {currentUser && (
-        <PortfolioPanel
-          refreshKey={portfolioKey}
-          stocks={stocks}
-          onSell={handleSell}
-        />
-      )}
+      <MarketBoardSlots />
 
       {authModal ? (
         <AuthModal
