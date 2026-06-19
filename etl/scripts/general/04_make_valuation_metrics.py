@@ -2,14 +2,14 @@
 financial_base.csv와 market_snapshot.csv를 합쳐 PER, PBR, ROE, 부채비율, 점수를 생성합니다.
 
 입력
-- etl/processed/financial_base.csv
-- etl/processed/market_snapshot.csv
+- etl/processed/2025/general/financial_base.csv
+- etl/processed/2025/general/market_snapshot.csv
 
 출력
-- etl/processed/valuation_metrics.csv
+- etl/processed/2025/general/valuation_metrics.csv
 
 실행
-    python etl/scripts/04_make_valuation_metrics.py
+    python etl/scripts/general/04_make_valuation_metrics.py
 
 """
 
@@ -21,10 +21,14 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_FINANCIAL = PROJECT_ROOT / "etl" / "processed" / "financial_base.csv"
-DEFAULT_MARKET = PROJECT_ROOT / "etl" / "processed" / "market_snapshot.csv"
-DEFAULT_OUTPUT = PROJECT_ROOT / "etl" / "processed" / "valuation_metrics.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+YEAR = "2025"
+SEGMENT = "general"
+PROCESSED_DIR = PROJECT_ROOT / "etl" / "processed" / YEAR / SEGMENT
+
+DEFAULT_FINANCIAL = PROCESSED_DIR / "financial_base.csv"
+DEFAULT_MARKET = PROCESSED_DIR / "market_snapshot.csv"
+DEFAULT_OUTPUT = PROCESSED_DIR / "valuation_metrics.csv"
 
 
 def parse_args() -> argparse.Namespace:

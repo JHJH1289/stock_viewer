@@ -13,10 +13,14 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT = PROJECT_ROOT / "etl" / "processed" / "financial_base.csv"
-DEFAULT_OUTPUT = PROJECT_ROOT / "etl" / "processed" / "market_snapshot.csv"
-DEFAULT_FAILED = PROJECT_ROOT / "etl" / "processed" / "market_snapshot_failed.csv"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+YEAR = "2025"
+SEGMENT = "general"
+PROCESSED_DIR = PROJECT_ROOT / "etl" / "processed" / YEAR / SEGMENT
+
+DEFAULT_INPUT = PROCESSED_DIR / "financial_base.csv"
+DEFAULT_OUTPUT = PROCESSED_DIR / "market_snapshot.csv"
+DEFAULT_FAILED = PROCESSED_DIR / "market_snapshot_failed.csv"
 DEFAULT_ENV = PROJECT_ROOT / "backend" / ".env"
 
 DOMESTIC_PRICE_PATH = "/uapi/domestic-stock/v1/quotations/inquire-price"
