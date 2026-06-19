@@ -48,3 +48,10 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.named('processResources') {
+    from('../etl/processed/2025/general') {
+        include 'valuation_metrics.csv'
+        into 'data/valuation'
+    }
+}

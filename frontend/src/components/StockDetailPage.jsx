@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
-import { fetchStockHistory, fetchStockQuote } from '../services/stockApi'
+import ValuationMetricsPanel from './ValuationMetricsPanel'
+import { fetchStockHistory, fetchStockQuote, fetchValuationMetrics } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
 
 function StockDetailPage() {
@@ -12,6 +13,7 @@ function StockDetailPage() {
   const [historyRange, setHistoryRange] = useState('1d')
   const [isLoading, setIsLoading] = useState(true)
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
+  const [valuationMetrics, setValuationMetrics] = useState(null)
   const [error, setError] = useState('')
   const [historyError, setHistoryError] = useState('')
   const timestamp = formatDetailTimestamp(new Date())
@@ -30,6 +32,7 @@ function StockDetailPage() {
     async function loadQuote() {
       setIsLoading(true)
       setHistory(null)
+      setValuationMetrics(null)
       setHistoryError('')
 
       try {
@@ -40,7 +43,7 @@ function StockDetailPage() {
         setError('')
       } catch (err) {
         if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Unable to load stock detail.')
+        setError(err instanceof Error ? err.message : '주식 정보를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
           setIsLoading(false)
@@ -54,6 +57,31 @@ function StockDetailPage() {
       cancelled = true
     }
   }, [symbol])
+
+  useEffect(() => {
+    if (!quote || quote.currency !== 'KRW') return
+
+    let cancelled = false
+
+    async function loadValuationMetrics() {
+      try {
+        const nextMetrics = await fetchValuationMetrics(quote.symbol)
+        if (!cancelled) {
+          setValuationMetrics(nextMetrics)
+        }
+      } catch {
+        if (!cancelled) {
+          setValuationMetrics(null)
+        }
+      }
+    }
+
+    loadValuationMetrics()
+
+    return () => {
+      cancelled = true
+    }
+  }, [quote])
 
   useEffect(() => {
     if (!quote) return
@@ -72,13 +100,7 @@ function StockDetailPage() {
       } catch (err) {
         if (cancelled) return
         setHistory(null)
-        setHistoryError(
-          quote.currency === 'KRW'
-            ? err instanceof Error
-              ? err.message
-              : 'Unable to load stock history.'
-            : '\uD604\uC7AC \uD55C\uAD6D \uC8FC\uC2DD\uB9CC \uCC28\uD2B8 \uC870\uD68C\uB97C \uC9C0\uC6D0\uD569\uB2C8\uB2E4.',
-        )
+        setHistoryError(err instanceof Error ? err.message : '차트 데이터를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
           setIsHistoryLoading(false)
@@ -101,7 +123,11 @@ function StockDetailPage() {
         </Link>
       </header>
 
-      {isLoading ? <p className="empty-message">Loading stock detail...</p> : null}
+      {isLoading ? (
+        <div className="page-spinner-wrap">
+          <div className="spinner" />
+        </div>
+      ) : null}
       {error ? <p className="error-message">{error}</p> : null}
 
       {quote ? (
@@ -118,7 +144,7 @@ function StockDetailPage() {
             <strong>{formatPrice(quote.price, quote.currency)}</strong>
             <span>{quote.currency}</span>
             <ChangeBadge value={quote.changePercent} />
-            <b>{`${formatPercent(quote.changePercent)} \uC804\uC77C \uB300\uBE44`}</b>
+            <b>{`${formatPercent(quote.changePercent)} 전일 대비`}</b>
           </div>
 
           <p className="detail-timestamp">{timestamp} GMT+9</p>
@@ -130,6 +156,7 @@ function StockDetailPage() {
             error={historyError}
             onRangeChange={setHistoryRange}
           />
+          <ValuationMetricsPanel metrics={valuationMetrics} currency={quote.currency} />
         </section>
       ) : null}
     </main>
@@ -137,11 +164,11 @@ function StockDetailPage() {
 }
 
 function formatDetailTimestamp(date) {
-  const period = date.getHours() < 12 ? '\uC624\uC804' : '\uC624\uD6C4'
+  const period = date.getHours() < 12 ? '오전' : '오후'
   const hour = date.getHours() <= 12 ? date.getHours() : date.getHours() - 12
   const minute = String(date.getMinutes()).padStart(2, '0')
 
-  return `${date.getMonth() + 1}\uC6D4 ${date.getDate()}\uC77C ${period} ${hour}:${minute}`
+  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${period} ${hour}:${minute}`
 }
 
 export default StockDetailPage

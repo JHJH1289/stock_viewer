@@ -77,6 +77,20 @@ export async function fetchStockHistory(symbol, range = '1mo') {
   return response.json()
 }
 
+export async function fetchValuationMetrics(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/valuation/${encodeURIComponent(symbol)}`)
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to load valuation metrics.')
+  }
+
+  return response.json()
+}
+
 export async function signup({ username, email, password }) {
   const response = await fetch(`${apiBaseUrl}/auth/signup`, {
     method: 'POST',
@@ -104,6 +118,60 @@ export async function login({ email, password }) {
     throw new Error(data.message ?? '로그인에 실패했습니다.')
   }
 
+  return data
+}
+
+function authHeaders() {
+  const token = window.localStorage.getItem('token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
+export async function fetchBalance() {
+  const response = await fetch(`${apiBaseUrl}/trading/balance`, {
+    headers: authHeaders(),
+  })
+  if (!response.ok) {
+    const data = await parseJsonResponse(response)
+    throw new Error(data.message ?? '잔고를 불러오지 못했습니다.')
+  }
+  return response.json()
+}
+
+export async function fetchHoldings() {
+  const response = await fetch(`${apiBaseUrl}/trading/holdings`, {
+    headers: authHeaders(),
+  })
+  if (!response.ok) throw new Error('보유 종목을 불러오지 못했습니다.')
+  return response.json()
+}
+
+export async function fetchTradeOrders() {
+  const response = await fetch(`${apiBaseUrl}/trading/orders`, {
+    headers: authHeaders(),
+  })
+  if (!response.ok) throw new Error('거래 내역을 불러오지 못했습니다.')
+  return response.json()
+}
+
+export async function buyStock({ symbol, stockName, marketCode, quantity, price }) {
+  const response = await fetch(`${apiBaseUrl}/trading/buy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ symbol, stockName, marketCode, quantity, price }),
+  })
+  const data = await parseJsonResponse(response)
+  if (!response.ok) throw new Error(data.message ?? '매수에 실패했습니다.')
+  return data
+}
+
+export async function sellStock({ symbol, marketCode, quantity, price }) {
+  const response = await fetch(`${apiBaseUrl}/trading/sell`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ symbol, marketCode, quantity, price }),
+  })
+  const data = await parseJsonResponse(response)
+  if (!response.ok) throw new Error(data.message ?? '매도에 실패했습니다.')
   return data
 }
 

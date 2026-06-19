@@ -16,8 +16,8 @@ public class StockMasterController {
 
     @GetMapping("/api/stocks/search")
     public List<StockMasterDto> search(
-            @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "20") int limit) {
+            @RequestParam(name = "keyword", defaultValue = "") String keyword,
+            @RequestParam(name = "limit", defaultValue = "20") int limit) {
         int safeLimit = Math.max(1, Math.min(limit, 50));
 
         return stockMasterRepository.search(keyword, safeLimit)
