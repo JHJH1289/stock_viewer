@@ -1100,7 +1100,7 @@
 .master-header,
 .master-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.5fr) 0.7fr 0.8fr 0.8fr 0.55fr 0.8fr 0.65fr 0.8fr;
+  grid-template-columns: minmax(220px, 1.5fr) 0.7fr 0.8fr 0.8fr 0.55fr 0.8fr 0.65fr 82px;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -1124,6 +1124,12 @@
 .master-row > span {
   color: var(--muted);
   font-size: 14px;
+}
+
+.search-trade-state {
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .error-message.is-inline {
@@ -2130,13 +2136,13 @@
   color: #047857;
 }
 
-.valuation-metric.is-low .valuation-metric-topline small {
-  background: #fee2e2;
-  color: #be123c;
+.valuation-metric.is-mid .valuation-metric-topline small {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
-.valuation-metric.is-expensive .valuation-metric-topline small {
-  background: #ffe4e6;
+.valuation-metric.is-low .valuation-metric-topline small {
+  background: #fee2e2;
   color: #be123c;
 }
 
@@ -2162,23 +2168,15 @@
   animation: valuation-meter-fill 560ms ease-out 740ms both;
 }
 
-.valuation-meter.is-burden {
-  background: linear-gradient(90deg, #dcfce7 0%, #fef3c7 48%, #ffe4e6 100%);
-}
-
-.valuation-meter.is-burden span {
-  background: linear-gradient(90deg, #22c55e 0%, #f59e0b 52%, #dc2626 100%);
-}
-
 .valuation-metric.is-good .valuation-meter span {
   background: #059669;
 }
 
-.valuation-metric.is-low .valuation-meter span {
-  background: #dc2626;
+.valuation-metric.is-mid .valuation-meter span {
+  background: #2563eb;
 }
 
-.valuation-metric.is-expensive .valuation-meter span {
+.valuation-metric.is-low .valuation-meter span {
   background: #dc2626;
 }
 
@@ -3396,10 +3394,6 @@
 
 [data-theme='dark'] .valuation-guide-popover {
   box-shadow: 0 14px 28px rgba(0, 0, 0, 0.36);
-}
-
-[data-theme='dark'] .valuation-meter.is-burden {
-  background: linear-gradient(90deg, rgba(34, 197, 94, 0.22) 0%, rgba(245, 158, 11, 0.22) 48%, rgba(220, 38, 38, 0.24) 100%);
 }
 
 @keyframes spin {

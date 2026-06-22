@@ -20,6 +20,7 @@ import './App.css'
 const refreshOptions = [30, 60, 120]
 const landingLogoutWindowMs = 60 * 60 * 1000
 const landingLogoutKey = 'stock-viewer-landing-logout-at'
+const dashboardSearchStateKey = 'stock-viewer-dashboard-search'
 
 function App() {
   const [theme, setTheme] = useState(() => window.localStorage.getItem('stock-viewer-theme') ?? 'light')
@@ -48,8 +49,8 @@ function App() {
 }
 
 function DashboardPage({ theme, onThemeChange }) {
-  const [query, setQuery] = useState('')
-  const [direction, setDirection] = useState('all')
+  const [searchState, setSearchState] = useState(getDashboardSearchState)
+  const { query, direction } = searchState
   const [refreshSeconds, setRefreshSeconds] = useState(30)
   const [authModal, setAuthModal] = useState(null)
   const [currentUser, setCurrentUser] = useState(getLandingCurrentUser)
@@ -90,6 +91,18 @@ function DashboardPage({ theme, onThemeChange }) {
     setTradeTarget({ stock, mode: 'sell' })
   }
 
+  useEffect(() => {
+    window.sessionStorage.setItem(dashboardSearchStateKey, JSON.stringify({ query, direction }))
+  }, [direction, query])
+
+  function handleQueryChange(nextQuery) {
+    setSearchState((current) => ({ ...current, query: nextQuery }))
+  }
+
+  function handleDirectionChange(nextDirection) {
+    setSearchState((current) => ({ ...current, direction: nextDirection }))
+  }
+
   return (
     <main className="app-shell">
       <AppHeader
@@ -120,8 +133,8 @@ function DashboardPage({ theme, onThemeChange }) {
         direction={direction}
         refreshSeconds={refreshSeconds}
         refreshOptions={refreshOptions}
-        onQueryChange={setQuery}
-        onDirectionChange={setDirection}
+        onQueryChange={handleQueryChange}
+        onDirectionChange={handleDirectionChange}
         onRefreshSecondsChange={setRefreshSeconds}
       />
       {error ? <p className="error-message">{error}</p> : null}
@@ -132,6 +145,8 @@ function DashboardPage({ theme, onThemeChange }) {
         isSearching={isSearching}
         isLoadingQuotes={isLoadingQuotes}
         error={searchError}
+        isLoggedIn={!!currentUser}
+        onBuy={handleBuy}
       />
       <QuoteTable
         stocks={filteredStocks}
@@ -180,6 +195,18 @@ function getLandingCurrentUser() {
   const token = window.localStorage.getItem('token')
   const username = window.localStorage.getItem('username')
   return token && username ? { username } : null
+}
+
+function getDashboardSearchState() {
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(dashboardSearchStateKey) ?? '{}')
+    return {
+      query: typeof parsed.query === 'string' ? parsed.query : '',
+      direction: ['all', 'up', 'down'].includes(parsed.direction) ? parsed.direction : 'all',
+    }
+  } catch {
+    return { query: '', direction: 'all' }
+  }
 }
 
 export default App

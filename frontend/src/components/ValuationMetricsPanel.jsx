@@ -63,30 +63,28 @@ function ValuationMetricsPanel({
       label: 'PER',
       value: formatRatio(metrics.per, '배'),
       score: metrics.perScore,
-      visualType: 'burden',
-      burden: getValuationBurden(metrics.per, VALUATION_BENCHMARKS.per),
+      visual: getLowerIsBetterVisual(metrics.per, VALUATION_BENCHMARKS.per),
       helper: getPerHelper(metrics.per),
     },
     {
       label: 'PBR',
       value: formatRatio(metrics.pbr, '배'),
       score: metrics.pbrScore,
-      visualType: 'burden',
-      burden: getValuationBurden(metrics.pbr, VALUATION_BENCHMARKS.pbr),
+      visual: getLowerIsBetterVisual(metrics.pbr, VALUATION_BENCHMARKS.pbr),
       helper: getPbrHelper(metrics.pbr),
     },
     {
       label: 'ROE',
       value: formatPercentValue(metrics.roe),
       score: metrics.roeScore,
-      visualType: 'score',
+      visual: getScoreVisual(metrics.roeScore),
       helper: '높을수록 수익성 우수',
     },
     {
       label: '부채비율',
       value: formatPercentValue(metrics.debtRatio),
       score: metrics.debtScore,
-      visualType: 'score',
+      visual: getScoreVisual(metrics.debtScore),
       helper: '낮을수록 재무 안정',
     },
   ]
@@ -169,12 +167,9 @@ function ValuationMetricsPanel({
         <div className="valuation-metric-grid">
           {metricItems.map((item) => {
             const itemScore = toNumber(item.score)
-            const isBurden = item.visualType === 'burden'
-            const itemPercent = isBurden
-              ? item.burden.percent
-              : clamp(((itemScore ?? 0) / 25) * 100, 0, 100)
-            const itemTone = isBurden ? item.burden.tone : getMetricTone(itemScore)
-            const itemLabel = isBurden ? item.burden.label : getMetricLabel(itemScore)
+            const itemPercent = item.visual.percent
+            const itemTone = item.visual.tone
+            const itemLabel = item.visual.label
             const isGuideOpen = openGuide === item.label
 
             return (
@@ -195,7 +190,7 @@ function ValuationMetricsPanel({
                   <small>{itemLabel}</small>
                 </div>
                 <strong>{item.value}</strong>
-                <div className={`valuation-meter ${isBurden ? 'is-burden' : 'is-score'}`} aria-hidden="true">
+                <div className="valuation-meter" aria-hidden="true">
                   <span style={{ width: `${itemPercent}%` }} />
                 </div>
                 <div className="valuation-metric-foot">
@@ -269,7 +264,7 @@ function MetricGuide({ metric }) {
   )
 }
 
-function getValuationBurden(value, benchmark) {
+function getLowerIsBetterVisual(value, benchmark) {
   const number = toNumber(value)
   if (number === null || number <= 0) {
     return { percent: 0, tone: 'is-low', label: '결측' }
@@ -277,16 +272,28 @@ function getValuationBurden(value, benchmark) {
 
   const percent = clamp((number / benchmark.high) * 100, 4, 100)
   if (number >= benchmark.high) {
-    return { percent, tone: 'is-expensive', label: '매우 높음' }
+    return { percent, tone: 'is-low', label: '매우 높음' }
   }
   if (number >= benchmark.upperQuartile) {
-    return { percent, tone: 'is-expensive', label: '주의' }
+    return { percent, tone: 'is-low', label: '주의' }
   }
   if (number >= benchmark.median) {
     return { percent, tone: 'is-mid', label: '보통' }
   }
 
   return { percent, tone: 'is-good', label: '낮음' }
+}
+
+function getScoreVisual(score) {
+  const number = toNumber(score)
+  const percent = clamp(((number ?? 0) / 25) * 100, 0, 100)
+  const tone = getMetricTone(number)
+
+  return {
+    percent,
+    tone,
+    label: getMetricLabel(number),
+  }
 }
 
 function getPerHelper(value) {
