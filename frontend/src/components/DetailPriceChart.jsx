@@ -198,9 +198,16 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
 
           <dl className="detail-summary-grid">
             {chart.summary.map((item) => (
-              <div key={item.label}>
+              <div className={item.type ? `is-${item.type}` : undefined} key={item.label}>
                 <dt>{item.label}</dt>
-                <dd>{item.value}</dd>
+                <dd>
+                  <span>{item.value}</span>
+                  {item.type === 'high' || item.type === 'low' ? (
+                    <i aria-hidden="true">
+                      <b style={{ width: `${item.type === 'high' ? 100 : 18}%` }} />
+                    </i>
+                  ) : null}
+                </dd>
               </div>
             ))}
           </dl>
@@ -352,7 +359,11 @@ function createSummary(points, currency) {
     ['저가', formatPrice(low, currency)],
     ['종가', formatPrice(last.close, currency)],
     ['거래량', volume.toLocaleString('ko-KR')],
-  ].map(([label, value]) => ({ label, value }))
+  ].map(([label, value], index) => ({
+    label,
+    value,
+    type: index === 1 ? 'high' : index === 2 ? 'low' : undefined,
+  }))
 }
 
 function formatPointLabel(timestamp) {
