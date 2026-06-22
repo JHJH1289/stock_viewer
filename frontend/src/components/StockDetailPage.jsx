@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
+import StockAiSummaryPanel from './StockAiSummaryPanel'
 import StockBoardPanel from './StockBoardPanel'
 import StockNewsPanel from './StockNewsPanel'
 import ValuationMetricsPanel from './ValuationMetricsPanel'
@@ -17,6 +18,7 @@ function StockDetailPage() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [valuationMetrics, setValuationMetrics] = useState(null)
   const [valuationHistory, setValuationHistory] = useState([])
+  const [detailNewsItems, setDetailNewsItems] = useState([])
   const [selectedValuationKey, setSelectedValuationKey] = useState('')
   const [error, setError] = useState('')
   const [historyError, setHistoryError] = useState('')
@@ -44,6 +46,7 @@ function StockDetailPage() {
       setHistory(null)
       setValuationMetrics(null)
       setValuationHistory([])
+      setDetailNewsItems([])
       setSelectedValuationKey('')
       setHistoryError('')
 
@@ -55,6 +58,7 @@ function StockDetailPage() {
         setError('')
       } catch (err) {
         if (cancelled) return
+        setQuote(null)
         setError(err instanceof Error ? err.message : '주식 정보를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
@@ -186,25 +190,30 @@ function StockDetailPage() {
           </div>
 
           <p className="detail-timestamp">{timestamp} GMT+9</p>
-          <DetailPriceChart
-            quote={quote}
-            history={history}
-            range={historyRange}
-            isLoading={isHistoryLoading}
-            error={historyError}
-            onRangeChange={setHistoryRange}
-          />
-          <ValuationMetricsPanel
-            metrics={valuationMetrics}
-            metricsHistory={valuationHistory}
-            selectedMetricsKey={selectedValuationKey}
-            currency={quote.currency}
-            onMetricsChange={handleValuationChange}
-          />
-          <section className="detail-news-board-section" aria-label="News and board">
-            <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} />
-            <StockBoardPanel quote={quote} />
-          </section>
+          <div className="detail-insight-layout">
+            <StockAiSummaryPanel quote={quote} valuation={valuationMetrics} history={history} news={detailNewsItems} />
+            <div className="detail-main-stack">
+              <DetailPriceChart
+                quote={quote}
+                history={history}
+                range={historyRange}
+                isLoading={isHistoryLoading}
+                error={historyError}
+                onRangeChange={setHistoryRange}
+              />
+              <ValuationMetricsPanel
+                metrics={valuationMetrics}
+                metricsHistory={valuationHistory}
+                selectedMetricsKey={selectedValuationKey}
+                currency={quote.currency}
+                onMetricsChange={handleValuationChange}
+              />
+              <section className="detail-news-board-section" aria-label="News and board">
+                <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} onNewsLoaded={setDetailNewsItems} />
+                <StockBoardPanel quote={quote} />
+              </section>
+            </div>
+          </div>
         </section>
       ) : null}
     </main>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import PortfolioAiSummaryPanel from './PortfolioAiSummaryPanel'
 import StockLink from './StockLink'
 import { fetchBalance, fetchHoldings, fetchStockQuote } from '../services/stockApi'
 import { formatPrice } from '../utils/market'
@@ -109,7 +110,7 @@ function MyPage() {
         </div>
 
         {!isLoggedIn ? (
-          <p className="mypage-state">로그인 후 보유 종목과 수익률을 확인할 수 있습니다.</p>
+          <p className="mypage-state">로그인하면 보유 종목과 수익률을 확인할 수 있습니다.</p>
         ) : null}
         {isLoading ? <p className="mypage-state">포트폴리오를 불러오는 중입니다.</p> : null}
         {error ? <p className="mypage-state is-error">{error}</p> : null}
@@ -126,6 +127,8 @@ function MyPage() {
                 tone={totalPnl >= 0 ? 'positive' : 'negative'}
               />
             </div>
+
+            <PortfolioAiSummaryPanel balance={balance} rows={rows} />
 
             <section className="mypage-portfolio-grid">
               <div className="mypage-card">
@@ -189,7 +192,10 @@ function MyPage() {
                         <span className={row.pnl >= 0 ? 'mypage-positive' : 'mypage-negative'}>
                           {row.pnl >= 0 ? '+' : ''}
                           {formatPrice(row.pnl, row.currency)}
-                          <small>{row.pnlPercent >= 0 ? '+' : ''}{row.pnlPercent.toFixed(2)}%</small>
+                          <small>
+                            {row.pnlPercent >= 0 ? '+' : ''}
+                            {row.pnlPercent.toFixed(2)}%
+                          </small>
                         </span>
                       </div>
                     ))}

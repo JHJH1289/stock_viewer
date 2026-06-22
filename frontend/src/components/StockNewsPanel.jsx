@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchMajorNews } from '../services/stockApi'
 
-function StockNewsPanel({ query = '주식 증권 코스피 나스닥' }) {
+function StockNewsPanel({ query = '주식 증권 코스피 나스닥', onNewsLoaded }) {
   const [news, setNews] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -9,15 +9,22 @@ function StockNewsPanel({ query = '주식 증권 코스피 나스닥' }) {
   useEffect(() => {
     let cancelled = false
 
-    fetchMajorNews({ query, display: 8 })
+    Promise.resolve()
+      .then(() => {
+        if (cancelled) return []
+        setIsLoading(true)
+        return fetchMajorNews({ query, display: 8 })
+      })
       .then((items) => {
         if (cancelled) return
         setNews(items)
+        onNewsLoaded?.(items)
         setError('')
       })
       .catch((err) => {
         if (cancelled) return
         setNews([])
+        onNewsLoaded?.([])
         setError(err instanceof Error ? err.message : '주요 뉴스를 불러오지 못했습니다.')
       })
       .finally(() => {
@@ -29,7 +36,7 @@ function StockNewsPanel({ query = '주식 증권 코스피 나스닥' }) {
     return () => {
       cancelled = true
     }
-  }, [query])
+  }, [query, onNewsLoaded])
 
   return (
     <section className="stock-news-panel" aria-label="Major stock news">
@@ -42,9 +49,7 @@ function StockNewsPanel({ query = '주식 증권 코스피 나스닥' }) {
       </div>
 
       {error ? <p className="stock-news-state">{error}</p> : null}
-      {!error && !isLoading && news.length === 0 ? (
-        <p className="stock-news-state">표시할 뉴스가 없습니다.</p>
-      ) : null}
+      {!error && !isLoading && news.length === 0 ? <p className="stock-news-state">표시할 뉴스가 없습니다.</p> : null}
       {!error && news.length > 0 ? (
         <div className="stock-news-list">
           {news.map((item) => (

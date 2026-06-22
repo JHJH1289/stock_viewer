@@ -198,6 +198,36 @@ export async function fetchMajorNews({ query = '주식 증권 코스피 나스�
   return data
 }
 
+export async function fetchStockAiSummary({ quote, valuation, chart, news }) {
+  const response = await fetch(`${apiBaseUrl}/ai/stock-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quote, valuation, chart, news }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'AI 기업 요약을 가져오지 못했습니다.')
+  }
+
+  return data
+}
+
+export async function fetchPortfolioAiSummary({ balance, holdings }) {
+  const response = await fetch(`${apiBaseUrl}/ai/portfolio-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ balance, holdings }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'AI 포트폴리오 요약을 가져오지 못했습니다.')
+  }
+
+  return data
+}
+
 export async function fetchStockBoardPosts(symbol) {
   const response = await fetch(`${apiBaseUrl}/posts/stock/${encodeURIComponent(symbol)}`)
 
