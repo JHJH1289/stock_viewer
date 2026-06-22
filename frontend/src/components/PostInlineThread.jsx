@@ -1,15 +1,28 @@
 import { useEffect, useState } from 'react'
-import { createPostComment, fetchBoardPost, fetchPostComments } from '../services/stockApi'
+import {
+  createPostComment,
+  deleteBoardPost,
+  deletePostComment,
+  fetchBoardPost,
+  fetchPostComments,
+  updateBoardPost,
+  updatePostComment,
+} from '../services/stockApi'
 
-function PostInlineThread({ postId }) {
+function PostInlineThread({ postId, onPostDeleted, onPostUpdated }) {
   const [post, setPost] = useState(null)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
+  const [editingPost, setEditingPost] = useState(null)
+  const [editingCommentId, setEditingCommentId] = useState(null)
+  const [editingCommentText, setEditingCommentText] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [commentError, setCommentError] = useState('')
   const isLoggedIn = Boolean(window.localStorage.getItem('token'))
+  const username = window.localStorage.getItem('username')
+  const canEditPost = Boolean(username && post?.username === username)
 
   useEffect(() => {
     let cancelled = false
@@ -64,6 +77,87 @@ function PostInlineThread({ postId }) {
     }
   }
 
+  async function handlePostEditSubmit(event) {
+    event.preventDefault()
+    if (!editingPost?.title.trim() || !editingPost?.content.trim()) {
+      setError('제목과 내용을 입력해주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const updated = await updateBoardPost(postId, {
+        title: editingPost.title.trim(),
+        content: editingPost.content.trim(),
+      })
+      setPost(updated)
+      setEditingPost(null)
+      setError('')
+      onPostUpdated?.(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '게시글 수정에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handlePostDelete() {
+    if (!window.confirm('게시글을 삭제할까요?')) return
+
+    setIsSubmitting(true)
+    try {
+      await deleteBoardPost(postId)
+      onPostDeleted?.(postId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '게시글 삭제에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  function startCommentEdit(comment) {
+    setEditingCommentId(comment.commentId)
+    setEditingCommentText(comment.content)
+    setCommentError('')
+  }
+
+  async function handleCommentEditSubmit(event, commentId) {
+    event.preventDefault()
+    if (!editingCommentText.trim()) {
+      setCommentError('댓글 내용을 입력해주세요.')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const updated = await updatePostComment(postId, commentId, { content: editingCommentText.trim() })
+      setComments((current) => current.map((comment) => (
+        comment.commentId === commentId ? updated : comment
+      )))
+      setEditingCommentId(null)
+      setEditingCommentText('')
+      setCommentError('')
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : '댓글 수정에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleCommentDelete(commentId) {
+    if (!window.confirm('댓글을 삭제할까요?')) return
+
+    setIsSubmitting(true)
+    try {
+      await deletePostComment(postId, commentId)
+      setComments((current) => current.filter((comment) => comment.commentId !== commentId))
+    } catch (err) {
+      setCommentError(err instanceof Error ? err.message : '댓글 삭제에 실패했습니다.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (isLoading) {
     return <p className="inline-thread-state">게시글을 불러오는 중입니다.</p>
   }
@@ -79,17 +173,56 @@ function PostInlineThread({ postId }) {
   return (
     <div className="inline-thread">
       <div className="inline-thread-body">
-        <p>{post.content}</p>
-        <dl>
-          <div>
-            <dt>조회</dt>
-            <dd>{post.viewCount ?? 0}</dd>
-          </div>
-          <div>
-            <dt>추천</dt>
-            <dd>{post.recommendCount ?? 0}</dd>
-          </div>
-        </dl>
+        {editingPost ? (
+          <form className="inline-edit-form" onSubmit={handlePostEditSubmit}>
+            <input
+              value={editingPost.title}
+              onChange={(event) => setEditingPost((current) => ({ ...current, title: event.target.value }))}
+              disabled={isSubmitting}
+              maxLength={200}
+            />
+            <textarea
+              value={editingPost.content}
+              onChange={(event) => setEditingPost((current) => ({ ...current, content: event.target.value }))}
+              disabled={isSubmitting}
+              rows={4}
+            />
+            <div>
+              <button type="submit" disabled={isSubmitting}>저장</button>
+              <button type="button" disabled={isSubmitting} onClick={() => setEditingPost(null)}>취소</button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="inline-thread-actions">
+              <dl>
+                <div>
+                  <dt>조회</dt>
+                  <dd>{post.viewCount ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>추천</dt>
+                  <dd>{post.recommendCount ?? 0}</dd>
+                </div>
+              </dl>
+              {canEditPost ? (
+                <div className="inline-action-buttons">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPost({ title: post.title, content: post.content })}
+                    disabled={isSubmitting}
+                  >
+                    수정
+                  </button>
+                  <button type="button" onClick={handlePostDelete} disabled={isSubmitting}>
+                    삭제
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <p>{post.content}</p>
+          </>
+        )}
       </div>
 
       <section className="inline-comments" aria-label="Comments">
@@ -106,7 +239,34 @@ function PostInlineThread({ postId }) {
                   <strong>{comment.username}</strong>
                   <span>{formatDateTime(comment.createdAt)}</span>
                 </div>
-                <p>{comment.content}</p>
+                {editingCommentId === comment.commentId ? (
+                  <form className="inline-edit-form is-comment-edit" onSubmit={(event) => handleCommentEditSubmit(event, comment.commentId)}>
+                    <textarea
+                      value={editingCommentText}
+                      onChange={(event) => setEditingCommentText(event.target.value)}
+                      disabled={isSubmitting}
+                      rows={2}
+                    />
+                    <div>
+                      <button type="submit" disabled={isSubmitting}>저장</button>
+                      <button type="button" disabled={isSubmitting} onClick={() => setEditingCommentId(null)}>취소</button>
+                    </div>
+                  </form>
+                ) : (
+                  <>
+                    <p>{comment.content}</p>
+                    {username && comment.username === username ? (
+                      <div className="inline-action-buttons is-comment-actions">
+                        <button type="button" onClick={() => startCommentEdit(comment)} disabled={isSubmitting}>
+                          수정
+                        </button>
+                        <button type="button" onClick={() => handleCommentDelete(comment.commentId)} disabled={isSubmitting}>
+                          삭제
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                )}
               </article>
             ))}
           </div>

@@ -25,6 +25,7 @@ import com.stockviewer.backend.repository.HoldingRepository;
 import com.stockviewer.backend.repository.UserRepository;
 
 import jakarta.validation.Valid;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -33,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 public class PostController {
 
     private final PostRepository postRepository;
+    private final CommentRepository commentRepository;
     private final BoardRepository boardRepository;
     private final StockRepository stockRepository;
     private final HoldingRepository holdingRepository;
@@ -141,6 +143,7 @@ public class PostController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deletePost(
             @PathVariable("id") Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -150,6 +153,7 @@ public class PostController {
         if (!Objects.equals(post.getUserId(), user.getId())) {
             throw new IllegalStateException("본인 글만 삭제할 수 있습니다.");
         }
+        commentRepository.deleteByPostId(id);
         postRepository.delete(post);
         return ResponseEntity.noContent().build();
     }

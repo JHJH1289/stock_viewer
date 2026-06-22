@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import PostInlineThread from './PostInlineThread'
 import { fetchMarketBoardPosts } from '../services/stockApi'
 
@@ -65,6 +65,13 @@ function MarketBoardSlots() {
 
 function BoardSlot({ eyebrow, title, posts, isLoading, error }) {
   const [expandedPostId, setExpandedPostId] = useState(null)
+  const [deletedPostIds, setDeletedPostIds] = useState([])
+  const [updatedPosts, setUpdatedPosts] = useState({})
+  const localPosts = useMemo(() => (
+    posts
+      .filter((post) => !deletedPostIds.includes(post.postId))
+      .map((post) => ({ ...post, ...(updatedPosts[post.postId] ?? {}) }))
+  ), [deletedPostIds, posts, updatedPosts])
 
   return (
     <div className="board-slot">
@@ -73,15 +80,15 @@ function BoardSlot({ eyebrow, title, posts, isLoading, error }) {
           <p className="eyebrow">{eyebrow}</p>
           <h2>{title}</h2>
         </div>
-        <span>{isLoading ? '불러오는 중' : `${posts.length}개`}</span>
+        <span>{isLoading ? '불러오는 중' : `${localPosts.length}개`}</span>
       </div>
       {error ? <p className="board-slot-state">{error}</p> : null}
-      {!error && !isLoading && posts.length === 0 ? (
+      {!error && !isLoading && localPosts.length === 0 ? (
         <p className="board-slot-state">아직 게시글이 없습니다.</p>
       ) : null}
-      {!error && posts.length > 0 ? (
+      {!error && localPosts.length > 0 ? (
         <div className="board-post-list">
-          {posts.map((post) => (
+          {localPosts.map((post) => (
             <article
               className={expandedPostId === post.postId ? 'board-post-preview is-expanded' : 'board-post-preview'}
               key={`${title}-${post.postId}`}
@@ -102,7 +109,16 @@ function BoardSlot({ eyebrow, title, posts, isLoading, error }) {
               </span>
               {expandedPostId === post.postId ? (
                 <div className="board-post-inline">
-                  <PostInlineThread postId={post.postId} />
+                  <PostInlineThread
+                    postId={post.postId}
+                    onPostDeleted={(deletedPostId) => {
+                      setDeletedPostIds((current) => [...current, deletedPostId])
+                      setExpandedPostId(null)
+                    }}
+                    onPostUpdated={(updatedPost) => {
+                      setUpdatedPosts((current) => ({ ...current, [updatedPost.postId]: updatedPost }))
+                    }}
+                  />
                 </div>
               ) : null}
             </article>

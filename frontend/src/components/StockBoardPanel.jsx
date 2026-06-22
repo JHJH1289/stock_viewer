@@ -149,7 +149,18 @@ function StockBoardPanel({ quote }) {
               </article>
               {expandedPostId === post.postId ? (
                 <div className="stock-board-inline">
-                  <PostInlineThread postId={post.postId} />
+                  <PostInlineThread
+                    postId={post.postId}
+                    onPostDeleted={(deletedPostId) => {
+                      setPosts((current) => current.filter((item) => item.postId !== deletedPostId))
+                      setExpandedPostId(null)
+                    }}
+                    onPostUpdated={(updatedPost) => {
+                      setPosts((current) => current.map((item) => (
+                        item.postId === updatedPost.postId ? { ...item, ...updatedPost } : item
+                      )))
+                    }}
+                  />
                 </div>
               ) : null}
             </div>

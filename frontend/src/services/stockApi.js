@@ -246,6 +246,33 @@ export async function createStockBoardPost(symbol, { title, content }) {
   return data
 }
 
+export async function updateBoardPost(postId, { title, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ title, content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '게시글 수정에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function deleteBoardPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+
+  if (!response.ok) {
+    const data = await parseJsonResponse(response)
+    throw new Error(data.message ?? '게시글 삭제에 실패했습니다.')
+  }
+}
+
 export async function fetchPostComments(postId) {
   const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments`)
 
@@ -269,6 +296,39 @@ export async function createPostComment(postId, { content }) {
   }
 
   return data
+}
+
+export async function updatePostComment(postId, commentId, { content }) {
+  const response = await fetch(
+    `${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ content }),
+    },
+  )
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '댓글 수정에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function deletePostComment(postId, commentId) {
+  const response = await fetch(
+    `${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+  )
+
+  if (!response.ok) {
+    const data = await parseJsonResponse(response)
+    throw new Error(data.message ?? '댓글 삭제에 실패했습니다.')
+  }
 }
 
 export async function buyStock({ symbol, stockName, marketCode, quantity, price }) {
