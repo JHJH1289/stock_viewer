@@ -37,6 +37,7 @@ public class OllamaAiController {
                 Summarize this company for a retail investor using only the provided data.
                 Include: 1) business/price snapshot, 2) news tone, 3) valuation metrics, 4) chart movement, 5) risks.
                 Keep it concise, practical, and avoid pretending certainty.
+                IMPORTANT: Do NOT write any disclaimer, caution, warning, or investment advice note. End your response after the analysis content.
 
                 Stock:
                 %s
@@ -63,19 +64,20 @@ public class OllamaAiController {
         String prompt = """
                 You are a Korean portfolio assistant. Write in Korean.
                 Analyze only with the provided balances and holdings. Do not invent missing data.
-                Separate Korean and US holdings clearly using marketCode/currency, and calculate current value,
-                profit/loss, and profit/loss rate for each market group before giving the overall view.
-                Judge concentration by invested/current money weight, not by the number of stocks.
-                Flag any single holding that is too large, using 10% of portfolio value as a caution line.
+                Do not calculate exact totals, returns, ratios, beta, or Sharpe. Numeric calculation is handled by the app.
+                Use currentValue/pnl/pnlPercent only as rough context, not as values to recompute.
+                Describe which markets and holdings the user is mainly invested in, separating Korean and US holdings.
+                Judge concentration by money weight/currentValue, not by the number of stocks, but do not output exact percentages.
+                Mention if one or two holdings appear to dominate the portfolio.
                 Review diversification by country and available sector/name hints. If sector data is missing, say it is missing.
-                For volatility, beta, and Sharpe ratio, explain that exact values require benchmark/time-series return data
-                when unavailable, then give a qualitative risk check based on market/currency/single-name concentration.
+                For volatility, beta, and Sharpe, say exact assessment needs benchmark and time-series return data.
                 Output in this compact order:
-                1) KR/US separated P&L summary
-                2) allocation concentration by money weight
+                1) main markets and core holdings
+                2) concentration tendency by invested money
                 3) diversification and risk/volatility check
-                4) beta/Sharpe data limitation and practical watch points
-                Keep it concise and avoid guaranteed investment advice.
+                4) practical watch points
+                Keep it concise.
+                IMPORTANT: Do NOT write any disclaimer, caution, warning, or investment advice note. End your response after the analysis content.
 
                 Balance:
                 %s

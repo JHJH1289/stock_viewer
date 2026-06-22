@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Markdown from 'react-markdown'
 import { fetchPortfolioAiSummary } from '../services/stockApi'
 
 function PortfolioAiSummaryPanel({ balance, rows }) {
@@ -107,7 +108,10 @@ function PortfolioAiSummaryPanel({ balance, rows }) {
 
       {error ? <p className="ai-summary-state is-error">{error}</p> : null}
       {!error && isLoading ? <p className="ai-summary-state">보유 종목과 손익을 정리하는 중입니다.</p> : null}
-      {!error && !isLoading && summary ? <p className="ai-summary-body">{summary}</p> : null}
+      {!error && !isLoading && summary ? <div className="ai-summary-body"><Markdown>{summary}</Markdown></div> : null}
+      {!error && !isLoading && summary ? (
+        <p className="ai-summary-disclaimer">⚠ 본 요약은 AI가 생성한 참고 자료입니다. 투자 판단의 책임은 투자자 본인에게 있으며, 실제 투자 결과를 보장하지 않습니다.</p>
+      ) : null}
       {!error && !isLoading && !summary ? (
         <p className="ai-summary-state">보유 종목이 있으면 로컬 Ollama로 포트폴리오를 요약합니다.</p>
       ) : null}

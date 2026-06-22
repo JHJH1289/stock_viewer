@@ -133,6 +133,10 @@ function AuthModal({ mode, onClose, onModeChange, onAuthSuccess }) {
           </label>
 
           {!isLogin ? (
+            <p className="modal-password-hint">영문, 숫자, 특수기호(!@#$% 등)를 포함해 입력해 주세요.</p>
+          ) : null}
+
+          {!isLogin ? (
             <label className="form-field">
               <span>비밀번호 확인</span>
               <input

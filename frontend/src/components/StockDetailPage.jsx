@@ -209,7 +209,12 @@ function StockDetailPage() {
               onMetricsChange={handleValuationChange}
             />
             <section className="detail-news-board-section" aria-label="News and board">
-              <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} onNewsLoaded={setDetailNewsItems} />
+              <StockNewsPanel
+                query={quote.market === 'KRX'
+                  ? `${quote.name} ${quote.symbol} 주식`
+                  : `${quote.symbol} 주가`}
+                onNewsLoaded={setDetailNewsItems}
+              />
               <StockBoardPanel quote={quote} />
             </section>
           </section>
