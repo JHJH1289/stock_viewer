@@ -1204,6 +1204,249 @@
   font-weight: 800;
 }
 
+.mypage-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.mypage-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.mypage-heading h1 {
+  margin: 4px 0 0;
+  color: var(--heading);
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.mypage-heading > span {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--subtle);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 28px;
+  white-space: nowrap;
+}
+
+.mypage-state {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mypage-state.is-error {
+  color: #be123c;
+}
+
+.mypage-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mypage-summary-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.mypage-summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.mypage-summary-card strong {
+  overflow: hidden;
+  color: var(--heading);
+  font-size: 20px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mypage-summary-card.is-positive strong,
+.mypage-positive {
+  color: #047857;
+}
+
+.mypage-summary-card.is-negative strong,
+.mypage-negative {
+  color: #be123c;
+}
+
+.mypage-portfolio-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.4fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.mypage-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.mypage-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mypage-card-heading h2 {
+  margin: 0;
+  color: var(--heading);
+  font-size: 18px;
+}
+
+.mypage-card-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.allocation-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.allocation-pie {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 180px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, var(--surface) 0 55%, transparent 56%),
+    conic-gradient(var(--pie));
+}
+
+.allocation-pie strong {
+  color: var(--heading);
+  font-size: 34px;
+  line-height: 1;
+  transform: translateY(-8px);
+}
+
+.allocation-pie span {
+  position: absolute;
+  top: 104px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.allocation-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.allocation-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.allocation-item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.allocation-item span {
+  overflow: hidden;
+  color: var(--heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.allocation-item strong {
+  color: var(--heading);
+}
+
+.mypage-holdings-table {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.mypage-holding-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.3fr) 70px minmax(92px, 1fr) minmax(92px, 1fr) minmax(92px, 1fr) minmax(122px, 1.2fr);
+  gap: 10px;
+  align-items: center;
+  min-width: 760px;
+  padding: 11px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.mypage-holding-row:first-child {
+  border-top: 0;
+}
+
+.mypage-holding-row.is-header {
+  color: var(--muted);
+  background: var(--subtle);
+  font-weight: 900;
+}
+
+.mypage-holding-row strong {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  color: var(--heading);
+  font-size: 13px;
+}
+
+.mypage-holding-row small {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .detail-market-page {
   margin-top: 18px;
   padding: 26px;
@@ -3208,6 +3451,9 @@
   .account-summary-balances,
   .detail-news-board-section,
   .market-board-slots,
+  .mypage-summary-grid,
+  .mypage-portfolio-grid,
+  .allocation-layout,
   .detail-panel,
   .detail-list,
   .detail-summary-grid,
@@ -3321,6 +3567,14 @@
 
   .account-orders-row {
     min-width: 680px;
+  }
+
+  .mypage-holdings-table {
+    overflow-x: auto;
+  }
+
+  .allocation-pie {
+    justify-self: center;
   }
 
   .detail-range-tabs {

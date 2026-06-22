@@ -18,6 +18,8 @@ import { filterStocks, getTopMovers } from './utils/market'
 import './App.css'
 
 const refreshOptions = [30, 60, 120]
+const landingLogoutWindowMs = 60 * 60 * 1000
+const landingLogoutKey = 'stock-viewer-landing-logout-at'
 
 function App() {
   const [theme, setTheme] = useState(() => window.localStorage.getItem('stock-viewer-theme') ?? 'light')
@@ -50,10 +52,7 @@ function DashboardPage({ theme, onThemeChange }) {
   const [direction, setDirection] = useState('all')
   const [refreshSeconds, setRefreshSeconds] = useState(30)
   const [authModal, setAuthModal] = useState(null)
-  const [currentUser, setCurrentUser] = useState(() => {
-    const username = window.localStorage.getItem('username')
-    return username ? { username } : null
-  })
+  const [currentUser, setCurrentUser] = useState(getLandingCurrentUser)
   const [tradeTarget, setTradeTarget] = useState(null)
   const [portfolioKey, setPortfolioKey] = useState(0)
 
@@ -165,6 +164,22 @@ function DashboardPage({ theme, onThemeChange }) {
       )}
     </main>
   )
+}
+
+function getLandingCurrentUser() {
+  const lastLogoutAt = Number(window.localStorage.getItem(landingLogoutKey) ?? 0)
+  const shouldResetLogin = !lastLogoutAt || Date.now() - lastLogoutAt > landingLogoutWindowMs
+
+  if (shouldResetLogin) {
+    window.localStorage.removeItem('token')
+    window.localStorage.removeItem('username')
+    window.localStorage.setItem(landingLogoutKey, String(Date.now()))
+    return null
+  }
+
+  const token = window.localStorage.getItem('token')
+  const username = window.localStorage.getItem('username')
+  return token && username ? { username } : null
 }
 
 export default App
