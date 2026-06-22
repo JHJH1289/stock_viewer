@@ -2,7 +2,7 @@ import ChangeBadge from './ChangeBadge'
 import StockLink from './StockLink'
 import { formatPrice } from '../utils/market'
 
-function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuotes, error }) {
+function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuotes, error, isLoggedIn, onBuy }) {
   if (!query.trim()) {
     return null
   }
@@ -28,7 +28,7 @@ function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuot
           <span>Country</span>
           <span>Exchange</span>
           <span>Currency</span>
-          <span>Corp Code</span>
+          <span>Trade</span>
         </div>
 
         {results.map((stock) => {
@@ -45,7 +45,13 @@ function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuot
               <span>{stock.country}</span>
               <span>{stock.exchange}</span>
               <span>{stock.currency}</span>
-              <span>{stock.corpCode || '-'}</span>
+              {isLoggedIn && quote ? (
+                <button className="trade-action-btn buy-btn" type="button" onClick={() => onBuy(toTradeStock(stock, quote))}>
+                  매수
+                </button>
+              ) : (
+                <span className="search-trade-state">{isLoggedIn ? '시세 대기' : '로그인 필요'}</span>
+              )}
             </div>
           )
         })}
@@ -56,6 +62,16 @@ function StockSearchResults({ query, results, quotes, isSearching, isLoadingQuot
       </div>
     </section>
   )
+}
+
+function toTradeStock(stock, quote) {
+  return {
+    symbol: stock.symbol,
+    name: stock.name,
+    market: quote.market ?? stock.exchange,
+    price: quote.price,
+    currency: quote.currency ?? stock.currency,
+  }
 }
 
 export default StockSearchResults

@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChangeBadge from './ChangeBadge'
 import DetailPriceChart from './DetailPriceChart'
+import StockAiSummaryPanel from './StockAiSummaryPanel'
+import StockBoardPanel from './StockBoardPanel'
+import StockNewsPanel from './StockNewsPanel'
 import ValuationMetricsPanel from './ValuationMetricsPanel'
 import StockBoard from './StockBoard'
-import { fetchStockHistory, fetchStockQuote, fetchValuationMetrics } from '../services/stockApi'
+import { fetchStockHistory, fetchStockQuote, fetchValuationMetricsHistory } from '../services/stockApi'
 import { formatPercent, formatPrice } from '../utils/market'
 
 function StockDetailPage() {
@@ -15,10 +18,19 @@ function StockDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isHistoryLoading, setIsHistoryLoading] = useState(false)
   const [valuationMetrics, setValuationMetrics] = useState(null)
+  const [valuationHistory, setValuationHistory] = useState([])
+  const [detailNewsItems, setDetailNewsItems] = useState([])
+  const [selectedValuationKey, setSelectedValuationKey] = useState('')
   const [error, setError] = useState('')
   const [historyError, setHistoryError] = useState('')
+  const historyRetryKeysRef = useRef(new Set())
   const timestamp = formatDetailTimestamp(new Date())
   const currentUsername = window.localStorage.getItem('username')
+
+  function handleValuationChange(nextKey) {
+    setSelectedValuationKey(nextKey)
+    setValuationMetrics(valuationHistory.find((item) => getValuationKey(item) === nextKey) ?? null)
+  }
 
   useEffect(() => {
     document.body.classList.add('is-detail-page')
@@ -35,6 +47,9 @@ function StockDetailPage() {
       setIsLoading(true)
       setHistory(null)
       setValuationMetrics(null)
+      setValuationHistory([])
+      setDetailNewsItems([])
+      setSelectedValuationKey('')
       setHistoryError('')
 
       try {
@@ -45,6 +60,7 @@ function StockDetailPage() {
         setError('')
       } catch (err) {
         if (cancelled) return
+        setQuote(null)
         setError(err instanceof Error ? err.message : '주식 정보를 불러오지 못했습니다.')
       } finally {
         if (!cancelled) {
@@ -67,13 +83,17 @@ function StockDetailPage() {
 
     async function loadValuationMetrics() {
       try {
-        const nextMetrics = await fetchValuationMetrics(quote.symbol)
+        const nextHistory = await fetchValuationMetricsHistory(quote.symbol)
         if (!cancelled) {
-          setValuationMetrics(nextMetrics)
+          setValuationHistory(nextHistory)
+          setValuationMetrics(nextHistory[0] ?? null)
+          setSelectedValuationKey(nextHistory[0] ? getValuationKey(nextHistory[0]) : '')
         }
       } catch {
         if (!cancelled) {
+          setValuationHistory([])
           setValuationMetrics(null)
+          setSelectedValuationKey('')
         }
       }
     }
@@ -92,6 +112,7 @@ function StockDetailPage() {
 
     async function loadHistory() {
       setIsHistoryLoading(true)
+      const retryKey = `${quote.symbol}:${historyRange}`
 
       try {
         const nextHistory = await fetchStockHistory(quote.symbol, historyRange)
@@ -101,6 +122,27 @@ function StockDetailPage() {
         setHistoryError('')
       } catch (err) {
         if (cancelled) return
+
+        if (!historyRetryKeysRef.current.has(retryKey)) {
+          historyRetryKeysRef.current.add(retryKey)
+          await wait(700)
+          if (cancelled) return
+
+          try {
+            const nextHistory = await fetchStockHistory(quote.symbol, historyRange)
+            if (cancelled) return
+
+            setHistory(nextHistory)
+            setHistoryError('')
+            return
+          } catch (retryError) {
+            if (cancelled) return
+            setHistory(null)
+            setHistoryError(retryError instanceof Error ? retryError.message : '차트 데이터를 불러오지 못했습니다.')
+            return
+          }
+        }
+
         setHistory(null)
         setHistoryError(err instanceof Error ? err.message : '차트 데이터를 불러오지 못했습니다.')
       } finally {
@@ -150,20 +192,45 @@ function StockDetailPage() {
           </div>
 
           <p className="detail-timestamp">{timestamp} GMT+9</p>
-          <DetailPriceChart
-            quote={quote}
-            history={history}
-            range={historyRange}
-            isLoading={isHistoryLoading}
-            error={historyError}
-            onRangeChange={setHistoryRange}
-          />
-          <ValuationMetricsPanel metrics={valuationMetrics} currency={quote.currency} />
+          <div className="detail-insight-layout">
+            <StockAiSummaryPanel quote={quote} valuation={valuationMetrics} history={history} news={detailNewsItems} />
+            <div className="detail-main-stack">
+              <DetailPriceChart
+                quote={quote}
+                history={history}
+                range={historyRange}
+                isLoading={isHistoryLoading}
+                error={historyError}
+                onRangeChange={setHistoryRange}
+              />
+              <ValuationMetricsPanel
+                metrics={valuationMetrics}
+                metricsHistory={valuationHistory}
+                selectedMetricsKey={selectedValuationKey}
+                currency={quote.currency}
+                onMetricsChange={handleValuationChange}
+              />
+              <section className="detail-news-board-section" aria-label="News and board">
+                <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} onNewsLoaded={setDetailNewsItems} />
+                <StockBoardPanel quote={quote} />
+              </section>
+            </div>
+          </div>
         </section>
       ) : null}
       <StockBoard symbol={symbol.toUpperCase()} currentUsername={currentUsername} />
     </main>
   )
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms)
+  })
+}
+
+function getValuationKey(metrics) {
+  return `${metrics.year ?? '-'}|${metrics.fiscalDate ?? '-'}|${metrics.priceDate ?? '-'}`
 }
 
 function formatDetailTimestamp(date) {

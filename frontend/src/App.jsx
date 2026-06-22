@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import AccountSummaryPanel from './components/AccountSummaryPanel'
 import AppHeader from './components/AppHeader'
 import AuthModal from './components/AuthModal'
-import IntegrationStatusList from './components/IntegrationStatusList'
 import MarketControls from './components/MarketControls'
-import PortfolioPanel from './components/PortfolioPanel'
+import MarketBoardSlots from './components/MarketBoardSlots'
+import PostDetailPage from './components/PostDetailPage'
 import QuoteTable from './components/QuoteTable'
 import StockDetailPage from './components/StockDetailPage'
 import StockSearchResults from './components/StockSearchResults'
@@ -18,6 +19,9 @@ import { filterStocks, getTopMovers } from './utils/market'
 import './App.css'
 
 const refreshOptions = [30, 60, 120]
+const landingLogoutWindowMs = 60 * 60 * 1000
+const landingLogoutKey = 'stock-viewer-landing-logout-at'
+const dashboardSearchStateKey = 'stock-viewer-dashboard-search'
 
 function App() {
   const [theme, setTheme] = useState(() => window.localStorage.getItem('stock-viewer-theme') ?? 'light')
@@ -40,20 +44,18 @@ function App() {
       />
       <Route path="/mypage" element={<MyPage />} />
       <Route path="/board" element={<GeneralBoard />} />
+      <Route path="/posts/:postId" element={<PostDetailPage />} />
       <Route path="/:symbol" element={<StockDetailPage />} />
     </Routes>
   )
 }
 
 function DashboardPage({ theme, onThemeChange }) {
-  const [query, setQuery] = useState('')
-  const [direction, setDirection] = useState('all')
+  const [searchState, setSearchState] = useState(getDashboardSearchState)
+  const { query, direction } = searchState
   const [refreshSeconds, setRefreshSeconds] = useState(30)
   const [authModal, setAuthModal] = useState(null)
-  const [currentUser, setCurrentUser] = useState(() => {
-    const username = window.localStorage.getItem('username')
-    return username ? { username } : null
-  })
+  const [currentUser, setCurrentUser] = useState(getLandingCurrentUser)
   const [tradeTarget, setTradeTarget] = useState(null)
   const [portfolioKey, setPortfolioKey] = useState(0)
 
@@ -78,23 +80,36 @@ function DashboardPage({ theme, onThemeChange }) {
   } = useStockSearch(query)
 
   const handleBuy = (stock) => setTradeTarget({ stock, mode: 'buy' })
-
   const handleSell = (holding) => {
-    const live = stocks.find(s => s.symbol === holding.symbol)
+    const live = stocks.find((stock) => stock.symbol === holding.symbol)
+    const currency = holding.marketCode === 'KRX' ? 'KRW' : 'USD'
     const stock = live ?? {
       symbol: holding.symbol,
       name: holding.stockName,
       price: holding.avgBuyPrice,
-      currency: holding.marketCode === 'KRX' ? 'KRW' : 'USD',
+      currency,
       market: holding.marketCode,
     }
     setTradeTarget({ stock, mode: 'sell' })
+  }
+
+  useEffect(() => {
+    window.sessionStorage.setItem(dashboardSearchStateKey, JSON.stringify({ query, direction }))
+  }, [direction, query])
+
+  function handleQueryChange(nextQuery) {
+    setSearchState((current) => ({ ...current, query: nextQuery }))
+  }
+
+  function handleDirectionChange(nextDirection) {
+    setSearchState((current) => ({ ...current, direction: nextDirection }))
   }
 
   return (
     <main className="app-shell">
       <AppHeader
         health={health}
+        integrations={integrations}
         isLoading={isLoading}
         theme={theme}
         onRefresh={refresh}
@@ -109,14 +124,19 @@ function DashboardPage({ theme, onThemeChange }) {
         }}
       />
       <TickerStrip stocks={topMovers} />
-      <IntegrationStatusList integrations={integrations} />
+      <AccountSummaryPanel
+        isLoggedIn={!!currentUser}
+        refreshKey={portfolioKey}
+        stocks={stocks}
+        onSell={handleSell}
+      />
       <MarketControls
         query={query}
         direction={direction}
         refreshSeconds={refreshSeconds}
         refreshOptions={refreshOptions}
-        onQueryChange={setQuery}
-        onDirectionChange={setDirection}
+        onQueryChange={handleQueryChange}
+        onDirectionChange={handleDirectionChange}
         onRefreshSecondsChange={setRefreshSeconds}
       />
       {error ? <p className="error-message">{error}</p> : null}
@@ -127,6 +147,8 @@ function DashboardPage({ theme, onThemeChange }) {
         isSearching={isSearching}
         isLoadingQuotes={isLoadingQuotes}
         error={searchError}
+        isLoggedIn={!!currentUser}
+        onBuy={handleBuy}
       />
       <QuoteTable
         stocks={filteredStocks}
@@ -134,14 +156,7 @@ function DashboardPage({ theme, onThemeChange }) {
         isLoggedIn={!!currentUser}
         onBuy={handleBuy}
       />
-
-      {currentUser && (
-        <PortfolioPanel
-          refreshKey={portfolioKey}
-          stocks={stocks}
-          onSell={handleSell}
-        />
-      )}
+      <MarketBoardSlots />
 
       {authModal ? (
         <AuthModal
@@ -166,6 +181,34 @@ function DashboardPage({ theme, onThemeChange }) {
       )}
     </main>
   )
+}
+
+function getLandingCurrentUser() {
+  const lastLogoutAt = Number(window.localStorage.getItem(landingLogoutKey) ?? 0)
+  const shouldResetLogin = !lastLogoutAt || Date.now() - lastLogoutAt > landingLogoutWindowMs
+
+  if (shouldResetLogin) {
+    window.localStorage.removeItem('token')
+    window.localStorage.removeItem('username')
+    window.localStorage.setItem(landingLogoutKey, String(Date.now()))
+    return null
+  }
+
+  const token = window.localStorage.getItem('token')
+  const username = window.localStorage.getItem('username')
+  return token && username ? { username } : null
+}
+
+function getDashboardSearchState() {
+  try {
+    const parsed = JSON.parse(window.sessionStorage.getItem(dashboardSearchStateKey) ?? '{}')
+    return {
+      query: typeof parsed.query === 'string' ? parsed.query : '',
+      direction: ['all', 'up', 'down'].includes(parsed.direction) ? parsed.direction : 'all',
+    }
+  } catch {
+    return { query: '', direction: 'all' }
+  }
 }
 
 export default App

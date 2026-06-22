@@ -91,6 +91,22 @@ export async function fetchValuationMetrics(symbol) {
   return response.json()
 }
 
+export async function fetchValuationMetricsHistory(symbol) {
+  const response = await fetch(`${apiBaseUrl}/stocks/valuation/${encodeURIComponent(symbol)}/history`)
+
+  if (response.status === 404) {
+    const metrics = await fetchValuationMetrics(symbol)
+    return metrics ? [metrics] : []
+  }
+
+  if (!response.ok) {
+    const metrics = await fetchValuationMetrics(symbol)
+    return metrics ? [metrics] : []
+  }
+
+  return response.json()
+}
+
 export async function signup({ username, email, password }) {
   const response = await fetch(`${apiBaseUrl}/auth/signup`, {
     method: 'POST',
@@ -151,6 +167,198 @@ export async function fetchTradeOrders() {
   })
   if (!response.ok) throw new Error('거래 내역을 불러오지 못했습니다.')
   return response.json()
+}
+
+export async function fetchBoardPosts({ page = 0, size = 5 } = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  })
+  const response = await fetch(`${apiBaseUrl}/posts?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchMajorNews({ query = '주식 증권 코스피 나스닥', display = 8 } = {}) {
+  const params = new URLSearchParams({
+    query,
+    display: String(display),
+  })
+  const response = await fetch(`${apiBaseUrl}/news/major?${params.toString()}`)
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '주요 뉴스를 불러오지 못했습니다.')
+  }
+
+  return data
+}
+
+export async function fetchStockAiSummary({ quote, valuation, chart, news }) {
+  const response = await fetch(`${apiBaseUrl}/ai/stock-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ quote, valuation, chart, news }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'AI 기업 요약을 가져오지 못했습니다.')
+  }
+
+  return data
+}
+
+export async function fetchPortfolioAiSummary({ balance, holdings }) {
+  const response = await fetch(`${apiBaseUrl}/ai/portfolio-summary`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ balance, holdings }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'AI 포트폴리오 요약을 가져오지 못했습니다.')
+  }
+
+  return data
+}
+
+export async function fetchStockBoardPosts(symbol) {
+  const response = await fetch(`${apiBaseUrl}/posts/stock/${encodeURIComponent(symbol)}`)
+
+  if (!response.ok) {
+    throw new Error('종목 게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchMarketBoardPosts(marketCode, { size = 5 } = {}) {
+  const params = new URLSearchParams({
+    size: String(size),
+  })
+  const response = await fetch(`${apiBaseUrl}/posts/markets/${encodeURIComponent(marketCode)}?${params.toString()}`)
+
+  if (!response.ok) {
+    throw new Error('시장 게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function fetchBoardPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`)
+
+  if (!response.ok) {
+    throw new Error('게시글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function createStockBoardPost(symbol, { title, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/stock/${encodeURIComponent(symbol)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ title, content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '게시글 작성에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function updateBoardPost(postId, { title, content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ title, content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '게시글 수정에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function deleteBoardPost(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+
+  if (!response.ok) {
+    const data = await parseJsonResponse(response)
+    throw new Error(data.message ?? '게시글 삭제에 실패했습니다.')
+  }
+}
+
+export async function fetchPostComments(postId) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments`)
+
+  if (!response.ok) {
+    throw new Error('댓글을 불러오지 못했습니다.')
+  }
+
+  return response.json()
+}
+
+export async function createPostComment(postId, { content }) {
+  const response = await fetch(`${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ content }),
+  })
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '댓글 작성에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function updatePostComment(postId, commentId, { content }) {
+  const response = await fetch(
+    `${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ content }),
+    },
+  )
+  const data = await parseJsonResponse(response)
+
+  if (!response.ok) {
+    throw new Error(data.message ?? '댓글 수정에 실패했습니다.')
+  }
+
+  return data
+}
+
+export async function deletePostComment(postId, commentId) {
+  const response = await fetch(
+    `${apiBaseUrl}/posts/${encodeURIComponent(postId)}/comments/${encodeURIComponent(commentId)}`,
+    {
+      method: 'DELETE',
+      headers: authHeaders(),
+    },
+  )
+
+  if (!response.ok) {
+    const data = await parseJsonResponse(response)
+    throw new Error(data.message ?? '댓글 삭제에 실패했습니다.')
+  }
 }
 
 export async function buyStock({ symbol, stockName, marketCode, quantity, price }) {

@@ -40,7 +40,7 @@ body {
 }
 
 body.is-detail-page {
-  background: #f6f7f9;
+  background: var(--bg);
 }
 
 button,

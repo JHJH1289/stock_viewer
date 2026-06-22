@@ -45,9 +45,11 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/health",
                                 "/api/stocks/**",
+                                "/api/news/**",
                                 "/api/integrations/**",
                                 "/actuator/**")
                         .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/ai/stock-summary").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/ranking").permitAll()
                         .anyRequest().authenticated())

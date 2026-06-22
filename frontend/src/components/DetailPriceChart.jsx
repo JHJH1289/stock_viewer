@@ -52,7 +52,7 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
     const nextIndex = getPointerIndex(event)
     event.currentTarget.releasePointerCapture?.(event.pointerId)
     setActiveIndex(nextIndex)
-    setSelection((current) => current ? { ...current, endIndex: nextIndex, isDragging: false } : current)
+    setSelection(null)
   }
 
   return (
@@ -89,7 +89,7 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            onPointerCancel={() => setSelection((current) => current ? { ...current, isDragging: false } : current)}
+            onPointerCancel={() => setSelection(null)}
             onPointerLeave={() => {
               if (!selection?.isDragging) {
                 setActiveIndex(chart.defaultIndex)

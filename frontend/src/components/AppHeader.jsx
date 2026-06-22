@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 
 function AppHeader({
   health,
+  integrations,
   isLoading,
   theme,
   onRefresh,
@@ -43,6 +44,9 @@ function AppHeader({
     onLogout()
   }
 
+  const dartStatus = getIntegrationStatus(integrations, 'OpenDART')
+  const kisStatus = getIntegrationStatus(integrations, 'Korea Investment')
+
   return (
     <header className="app-header">
       <div>
@@ -50,9 +54,13 @@ function AppHeader({
         <h1>Live Stock Monitor</h1>
       </div>
       <div className="header-actions">
-        <div className="status-pill" aria-live="polite">
-          <span className={health?.status === 'UP' ? 'status-dot is-up' : 'status-dot'} />
-          API {health?.status ?? 'Checking'}
+        <div className="status-pill" aria-live="polite" title={`Backend ${health?.status ?? 'Checking'}`}>
+          <span className={dartStatus.configured ? 'status-dot is-up' : 'status-dot'} />
+          DART {dartStatus.label}
+        </div>
+        <div className="status-pill" aria-live="polite" title={`Backend ${health?.status ?? 'Checking'}`}>
+          <span className={kisStatus.configured ? 'status-dot is-up' : 'status-dot'} />
+          KIS {kisStatus.label}
         </div>
         <button className="theme-toggle" type="button" onClick={onThemeChange} aria-label="Change theme">
           <span className={theme === 'light' ? 'theme-icon is-light' : 'theme-icon is-dark'} />
@@ -97,6 +105,18 @@ function AppHeader({
       </div>
     </header>
   )
+}
+
+function getIntegrationStatus(integrations, name) {
+  const check = integrations?.checks?.find((item) => item.name === name)
+  if (!check) {
+    return { configured: false, label: 'Checking' }
+  }
+
+  return {
+    configured: check.configured,
+    label: check.configured ? 'UP' : 'Missing',
+  }
 }
 
 export default AppHeader
