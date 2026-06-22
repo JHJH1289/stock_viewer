@@ -135,7 +135,7 @@ function DetailPriceChart({ quote, history, range, isLoading, error, onRangeChan
             ))}
 
             <path className="detail-area-fill" d={chart.areaPath} />
-            <path className="detail-area-line" d={chart.linePath} />
+            <path className="detail-area-line" d={chart.linePath} pathLength="1" />
 
             {selectedRange ? (
               <g>

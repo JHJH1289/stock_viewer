@@ -62,9 +62,20 @@ public class OllamaAiController {
     public AiSummaryResponse portfolioSummary(@RequestBody PortfolioSummaryRequest request) {
         String prompt = """
                 You are a Korean portfolio assistant. Write in Korean.
-                Analyze this user's stock portfolio using only the provided holdings and balances.
-                Include: 1) allocation concentration, 2) current profit/loss, 3) currency/market exposure, 4) actionable watch points.
-                Keep it concise and do not give guaranteed investment advice.
+                Analyze only with the provided balances and holdings. Do not invent missing data.
+                Separate Korean and US holdings clearly using marketCode/currency, and calculate current value,
+                profit/loss, and profit/loss rate for each market group before giving the overall view.
+                Judge concentration by invested/current money weight, not by the number of stocks.
+                Flag any single holding that is too large, using 10% of portfolio value as a caution line.
+                Review diversification by country and available sector/name hints. If sector data is missing, say it is missing.
+                For volatility, beta, and Sharpe ratio, explain that exact values require benchmark/time-series return data
+                when unavailable, then give a qualitative risk check based on market/currency/single-name concentration.
+                Output in this compact order:
+                1) KR/US separated P&L summary
+                2) allocation concentration by money weight
+                3) diversification and risk/volatility check
+                4) beta/Sharpe data limitation and practical watch points
+                Keep it concise and avoid guaranteed investment advice.
 
                 Balance:
                 %s
@@ -73,7 +84,7 @@ public class OllamaAiController {
                 %s
                 """.formatted(
                 trimText(String.valueOf(request.balance()), 1000),
-                trimText(String.valueOf(request.holdings()), 2200));
+                trimText(String.valueOf(request.holdings()), 3200));
 
         return generate(prompt);
     }

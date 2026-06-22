@@ -4,6 +4,10 @@
   padding: 28px 0 40px;
 }
 
+.detail-app-shell {
+  width: min(1540px, calc(100% - 32px));
+}
+
 .app-header,
 .header-actions,
 .board-heading,
@@ -815,6 +819,17 @@
 
 .detail-news-board-section .stock-board-inline {
   padding: 0;
+}
+
+.detail-page-with-sidebar {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-page-with-sidebar > .stock-ai-summary {
+  margin-top: 18px;
 }
 
 .detail-insight-layout {
@@ -1899,8 +1914,8 @@
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 1200;
-  stroke-dashoffset: 1200;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
   animation: detail-chart-draw 760ms ease-out 260ms forwards;
 }
 
@@ -3742,6 +3757,7 @@
   .integration-row,
   .api-summary-grid,
   .account-summary-balances,
+  .detail-page-with-sidebar,
   .detail-insight-layout,
   .detail-news-board-section,
   .market-board-slots,

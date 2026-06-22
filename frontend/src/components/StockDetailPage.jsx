@@ -158,7 +158,7 @@ function StockDetailPage() {
   }, [quote, historyRange])
 
   return (
-    <main className="app-shell">
+    <main className="app-shell detail-app-shell">
       <header className="detail-header is-compact">
         <Link className="back-link" to="/">
           Back
@@ -173,48 +173,47 @@ function StockDetailPage() {
       {error ? <p className="error-message">{error}</p> : null}
 
       {quote ? (
-        <section className="detail-market-page">
-          <div className="detail-stock-heading">
-            <div className="detail-logo">{quote.symbol.slice(0, 2).toUpperCase()}</div>
-            <div>
-              <h1>{quote.name}</h1>
-              <span>{`${quote.market}: ${quote.symbol}`}</span>
-            </div>
-          </div>
+        <div className="detail-page-with-sidebar">
+          <StockAiSummaryPanel quote={quote} valuation={valuationMetrics} history={history} news={detailNewsItems} />
 
-          <div className="detail-price-row">
-            <strong>{formatPrice(quote.price, quote.currency)}</strong>
-            <span>{quote.currency}</span>
-            <ChangeBadge value={quote.changePercent} />
-            <b>{`${formatPercent(quote.changePercent)} 전일 대비`}</b>
-          </div>
-
-          <p className="detail-timestamp">{timestamp} GMT+9</p>
-          <div className="detail-insight-layout">
-            <StockAiSummaryPanel quote={quote} valuation={valuationMetrics} history={history} news={detailNewsItems} />
-            <div className="detail-main-stack">
-              <DetailPriceChart
-                quote={quote}
-                history={history}
-                range={historyRange}
-                isLoading={isHistoryLoading}
-                error={historyError}
-                onRangeChange={setHistoryRange}
-              />
-              <ValuationMetricsPanel
-                metrics={valuationMetrics}
-                metricsHistory={valuationHistory}
-                selectedMetricsKey={selectedValuationKey}
-                currency={quote.currency}
-                onMetricsChange={handleValuationChange}
-              />
-              <section className="detail-news-board-section" aria-label="News and board">
-                <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} onNewsLoaded={setDetailNewsItems} />
-                <StockBoardPanel quote={quote} />
-              </section>
+          <section className="detail-market-page">
+            <div className="detail-stock-heading">
+              <div className="detail-logo">{quote.symbol.slice(0, 2).toUpperCase()}</div>
+              <div>
+                <h1>{quote.name}</h1>
+                <span>{`${quote.market}: ${quote.symbol}`}</span>
+              </div>
             </div>
-          </div>
-        </section>
+
+            <div className="detail-price-row">
+              <strong>{formatPrice(quote.price, quote.currency)}</strong>
+              <span>{quote.currency}</span>
+              <ChangeBadge value={quote.changePercent} />
+              <b>{`${formatPercent(quote.changePercent)} 전일 대비`}</b>
+            </div>
+
+            <p className="detail-timestamp">{timestamp} GMT+9</p>
+            <DetailPriceChart
+              quote={quote}
+              history={history}
+              range={historyRange}
+              isLoading={isHistoryLoading}
+              error={historyError}
+              onRangeChange={setHistoryRange}
+            />
+            <ValuationMetricsPanel
+              metrics={valuationMetrics}
+              metricsHistory={valuationHistory}
+              selectedMetricsKey={selectedValuationKey}
+              currency={quote.currency}
+              onMetricsChange={handleValuationChange}
+            />
+            <section className="detail-news-board-section" aria-label="News and board">
+              <StockNewsPanel query={`${quote.name} ${quote.symbol} 주식`} onNewsLoaded={setDetailNewsItems} />
+              <StockBoardPanel quote={quote} />
+            </section>
+          </section>
+        </div>
       ) : null}
     </main>
   )

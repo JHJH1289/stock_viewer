@@ -46,10 +46,10 @@ public class SecurityConfig {
                                 "/api/health",
                                 "/api/stocks/**",
                                 "/api/news/**",
+                                "/api/ai/**",
                                 "/api/integrations/**",
                                 "/actuator/**")
                         .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/ai/stock-summary").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/posts", "/api/posts/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
