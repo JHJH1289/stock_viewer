@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import StockLink from './StockLink'
 import { fetchBalance, fetchHoldings, fetchStockQuote } from '../services/stockApi'
 import { formatPrice } from '../utils/market'
 
@@ -144,7 +145,10 @@ function MyPage() {
                       {pieSlices.items.map((item) => (
                         <div className="allocation-item" key={item.symbol}>
                           <i style={{ background: item.color }} />
-                          <span>{item.symbol}</span>
+                          <span>
+                            {item.stockName}
+                            <small>{item.symbol}</small>
+                          </span>
                           <strong>{item.percent.toFixed(1)}%</strong>
                         </div>
                       ))}
@@ -172,10 +176,10 @@ function MyPage() {
                     </div>
                     {rows.map((row) => (
                       <div className="mypage-holding-row" key={`${row.marketCode}-${row.symbol}`}>
-                        <strong>
-                          {row.symbol}
-                          <small>{row.stockName}</small>
-                        </strong>
+                        <StockLink className="mypage-holding-link" symbol={row.symbol}>
+                          {row.stockName}
+                          <small>{row.symbol}</small>
+                        </StockLink>
                         <span>{Number(row.quantity).toLocaleString()}</span>
                         <span>{formatPrice(row.avgBuyPrice, row.currency)}</span>
                         <span>{formatPrice(row.currentPrice, row.currency)}</span>
@@ -222,6 +226,7 @@ function buildPieSlices(rows, totalValue) {
     cursor = end
     return {
       symbol: row.symbol,
+      stockName: row.stockName,
       color: pieColors[index % pieColors.length],
       percent,
       segment: `${pieColors[index % pieColors.length]} ${start}% ${end}%`,

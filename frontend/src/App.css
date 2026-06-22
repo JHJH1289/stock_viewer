@@ -588,15 +588,26 @@
   font-size: 13px;
 }
 
-.account-holdings-row strong {
+.account-holdings-row strong,
+.account-holding-link {
   display: grid;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
   color: var(--heading);
   font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.account-holdings-row small {
+.account-holding-link:hover {
+  color: #2563eb;
+}
+
+.account-holdings-row small,
+.account-holding-link small {
   overflow: hidden;
   color: var(--muted);
   font-size: 11px;
@@ -1349,11 +1360,12 @@
   display: grid;
   grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.4fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .mypage-card {
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 14px;
   min-width: 0;
   padding: 18px;
@@ -1387,6 +1399,8 @@
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 18px;
   align-items: center;
+  align-content: center;
+  min-height: 100%;
 }
 
 .allocation-pie {
@@ -1439,8 +1453,19 @@
 }
 
 .allocation-item span {
+  display: grid;
+  gap: 2px;
   overflow: hidden;
   color: var(--heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.allocation-item span small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1479,15 +1504,26 @@
   font-weight: 900;
 }
 
-.mypage-holding-row strong {
+.mypage-holding-row strong,
+.mypage-holding-link {
   display: grid;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
   color: var(--heading);
   font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.mypage-holding-row small {
+.mypage-holding-link:hover {
+  color: #2563eb;
+}
+
+.mypage-holding-row small,
+.mypage-holding-link small {
   display: block;
   overflow: hidden;
   color: var(--muted);

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import StockLink from './StockLink'
 import { fetchBalance, fetchHoldings, fetchTradeOrders } from '../services/stockApi'
 import { formatPrice } from '../utils/market'
 
@@ -92,10 +93,10 @@ function AccountSummaryPanel({ isLoggedIn, refreshKey, stocks = [], onSell }) {
                 const currency = holding.marketCode === 'KRX' ? 'KRW' : 'USD'
                 return (
                   <div className="account-holdings-row" key={`${holding.marketCode}-${holding.symbol}`}>
-                    <strong>
-                      {holding.symbol}
-                      <small>{holding.stockName}</small>
-                    </strong>
+                    <StockLink className="account-holding-link" symbol={holding.symbol}>
+                      {holding.stockName}
+                      <small>{holding.symbol}</small>
+                    </StockLink>
                     <span>{Number(holding.quantity).toLocaleString()}</span>
                     <span>{formatPrice(holding.avgBuyPrice, currency)}</span>
                     <span>{live ? formatPrice(live.price, live.currency ?? currency) : '-'}</span>
