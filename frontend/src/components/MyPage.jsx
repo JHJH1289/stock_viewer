@@ -106,7 +106,7 @@ function MyPage() {
             <p className="eyebrow">My Page</p>
             <h1>내 포트폴리오</h1>
           </div>
-          <span>{isLoggedIn ? '계좌 연결됨' : '로그인 필요'}</span>
+          <span>{isLoggedIn ? '가상 계좌 연결됨' : '로그인 필요'}</span>
         </div>
 
         {!isLoggedIn ? (
