@@ -129,7 +129,7 @@ function ValuationMetricsPanel({
             <span>/100</span>
           </div>
           <p className="valuation-score-formula">
-            4개 지표를 각각 25점 만점으로 환산해 합산합니다.
+            4개 지표 점수를 더해 100점 만점으로 환산합니다.
           </p>
         </div>
 
@@ -228,8 +228,8 @@ function ScoreGuide() {
   return (
     <div className="valuation-guide-popover is-score-guide" role="dialog" aria-label="가치 점수 설명">
       <p>
-        점수는 전체 기업 분포 안에서의 상대 위치를 사용합니다. PER/PBR/부채비율은 낮을수록,
-        ROE는 높을수록 높은 점수를 받습니다.
+        PER, PBR, ROE, 부채비율을 각각 25점 만점으로 계산해 더합니다. 기준점 사이 값은
+        선형 보간하며, PER/PBR/부채비율은 낮을수록, ROE는 높을수록 유리합니다.
       </p>
       <dl>
         <div>

@@ -66,68 +66,45 @@ def safe_divide(numerator: pd.Series, denominator: pd.Series) -> pd.Series:
     return numerator / denominator
 
 
-def score_per(per: float) -> int:
-    """PER 점수: 낮을수록 높은 점수, 적자/음수/결측은 0점"""
+def interpolate_score(value: float, points: list[tuple[float, float]]) -> float:
+    """기준점 사이를 선형 보간해 계단형이 아닌 연속 점수로 환산."""
+    if pd.isna(value):
+        return 0.0
+    if value <= points[0][0]:
+        return points[0][1]
+    for (left_value, left_score), (right_value, right_score) in zip(points, points[1:]):
+        if value <= right_value:
+            ratio = (value - left_value) / (right_value - left_value)
+            return left_score + ratio * (right_score - left_score)
+    return points[-1][1]
+
+
+def score_per(per: float) -> float:
+    """PER 점수: 낮을수록 높은 점수, 적자/음수/결측은 0점."""
     if pd.isna(per) or per <= 0:
-        return 0
-    if per <= 5:
-        return 25
-    if per <= 10:
-        return 20
-    if per <= 15:
-        return 15
-    if per <= 20:
-        return 10
-    if per <= 30:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(per, [(5, 25), (10, 20), (15, 15), (20, 10), (30, 5), (40, 0)])
 
 
-def score_pbr(pbr: float) -> int:
-    """PBR 점수: 낮을수록 높은 점수, 자본잠식/음수/결측은 0점"""
+def score_pbr(pbr: float) -> float:
+    """PBR 점수: 낮을수록 높은 점수, 자본잠식/음수/결측은 0점."""
     if pd.isna(pbr) or pbr <= 0:
-        return 0
-    if pbr <= 0.5:
-        return 25
-    if pbr <= 1:
-        return 20
-    if pbr <= 1.5:
-        return 15
-    if pbr <= 2:
-        return 10
-    if pbr <= 3:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(pbr, [(0.5, 25), (1, 20), (1.5, 15), (2, 10), (3, 5), (5, 0)])
 
 
-def score_roe(roe: float) -> int:
-    """ROE 점수: 높을수록 높은 점수"""
+def score_roe(roe: float) -> float:
+    """ROE 점수: 높을수록 높은 점수."""
     if pd.isna(roe):
-        return 0
-    if roe >= 15:
-        return 25
-    if roe >= 10:
-        return 20
-    if roe >= 5:
-        return 15
-    if roe > 0:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(roe, [(0, 0), (5, 15), (10, 20), (15, 25)])
 
 
-def score_debt_ratio(debt_ratio: float) -> int:
-    """부채비율 점수: 낮을수록 높은 점수"""
+def score_debt_ratio(debt_ratio: float) -> float:
+    """부채비율 점수: 낮을수록 높은 점수."""
     if pd.isna(debt_ratio) or debt_ratio < 0:
-        return 0
-    if debt_ratio <= 100:
-        return 25
-    if debt_ratio <= 150:
-        return 15
-    if debt_ratio <= 200:
-        return 10
-    if debt_ratio <= 300:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(debt_ratio, [(100, 25), (150, 15), (200, 10), (300, 5), (500, 0)])
 
 
 def main() -> int:
@@ -181,10 +158,10 @@ def main() -> int:
     merged["pbr_score"] = merged["pbr"].apply(score_pbr)
     merged["roe_score"] = merged["roe"].apply(score_roe)
     merged["debt_score"] = merged["debt_ratio"].apply(score_debt_ratio)
-    merged["valuation_score"] = merged[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1).astype(int)
+    merged["valuation_score"] = merged[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1)
 
     # 화면 표시/CSV 확인이 쉽도록 소수점 정리
-    for column in ["per", "pbr", "roe", "debt_ratio"]:
+    for column in ["per", "pbr", "roe", "debt_ratio", "per_score", "pbr_score", "roe_score", "debt_score", "valuation_score"]:
         merged[column] = merged[column].round(2)
 
     # valuation_label은 일부러 만들지 않습니다. 라벨링은 프론트에서 처리합니다.

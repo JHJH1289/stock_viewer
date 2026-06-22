@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -29,23 +30,34 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
             Path.of("..", "etl", "processed"));
 
     private Map<String, ValuationMetrics> metricsBySymbol = Map.of();
-    private Map<String, List<ValuationMetrics>> metricHistoryBySymbol = Map.of();
+    private Map<String, List<ValuationMetrics>> historyBySymbol = Map.of();
 
     @PostConstruct
     void load() throws IOException {
-        Map<String, List<ValuationMetrics>> loadedHistory = new HashMap<>();
+        List<CsvSource> sources = findCsvSources();
+        if (sources.isEmpty()) {
+            metricsBySymbol = Map.of();
+            historyBySymbol = Map.of();
+            return;
+        }
 
-        for (InputStream inputStream : openCsvStreams()) {
-            try (inputStream) {
+        Map<String, Map<String, ValuationMetrics>> loadedHistory = new HashMap<>();
+        for (CsvSource source : sources) {
+            try (InputStream inputStream = source.open()) {
                 loadCsv(inputStream, loadedHistory);
             }
         }
 
         Map<String, ValuationMetrics> latestMetrics = new HashMap<>();
         Map<String, List<ValuationMetrics>> sortedHistory = new HashMap<>();
-        for (Map.Entry<String, List<ValuationMetrics>> entry : loadedHistory.entrySet()) {
-            List<ValuationMetrics> history = entry.getValue().stream()
-                    .sorted(metricComparator())
+        Comparator<ValuationMetrics> latestFirst = Comparator
+                .comparing(ValuationMetrics::year, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ValuationMetrics::fiscalDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(ValuationMetrics::priceDate, Comparator.nullsLast(Comparator.reverseOrder()));
+
+        for (Map.Entry<String, Map<String, ValuationMetrics>> entry : loadedHistory.entrySet()) {
+            List<ValuationMetrics> history = entry.getValue().values().stream()
+                    .sorted(latestFirst)
                     .toList();
             sortedHistory.put(entry.getKey(), history);
             if (!history.isEmpty()) {
@@ -54,7 +66,7 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
         }
 
         metricsBySymbol = Map.copyOf(latestMetrics);
-        metricHistoryBySymbol = Map.copyOf(sortedHistory);
+        historyBySymbol = Map.copyOf(sortedHistory);
     }
 
     @Override
@@ -64,91 +76,110 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
 
     @Override
     public List<ValuationMetrics> findAllBySymbol(String symbol) {
-        return metricHistoryBySymbol.getOrDefault(normalize(symbol), List.of());
+        return historyBySymbol.getOrDefault(normalize(symbol), List.of());
     }
 
-    private List<InputStream> openCsvStreams() throws IOException {
-        List<InputStream> streams = new ArrayList<>();
-
-        List<Path> workspacePaths = findWorkspaceCsvPaths();
-        for (Path path : workspacePaths) {
-            streams.add(Files.newInputStream(path));
-        }
-
-        if (!streams.isEmpty()) {
-            return streams;
-        }
-
-        ClassPathResource resource = new ClassPathResource(CSV_PATH);
-        if (resource.exists()) {
-            streams.add(resource.getInputStream());
-        }
-
-        return streams;
-    }
-
-    private List<Path> findWorkspaceCsvPaths() throws IOException {
-        for (Path processedPath : WORKSPACE_PROCESSED_PATHS) {
-            if (!Files.exists(processedPath)) {
-                continue;
-            }
-
-            try (Stream<Path> paths = Files.walk(processedPath)) {
-                return paths
-                        .filter(Files::isRegularFile)
-                        .filter(path -> path.getFileName().toString().equals("valuation_metrics.csv"))
-                        .sorted()
-                        .toList();
-            }
-        }
-
-        return List.of();
-    }
-
-    private void loadCsv(InputStream inputStream, Map<String, List<ValuationMetrics>> loadedHistory) throws IOException {
+    private void loadCsv(
+            InputStream inputStream,
+            Map<String, Map<String, ValuationMetrics>> loadedHistory) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-            reader.readLine();
+            String headerLine = reader.readLine();
+            if (headerLine == null) {
+                return;
+            }
 
+            Map<String, Integer> headerIndex = toHeaderIndex(parseCsvLine(headerLine));
             String line;
             while ((line = reader.readLine()) != null) {
-                List<String> columns = parseCsvLine(line);
-                if (columns.size() < 23) {
+                ValuationMetrics metrics = toMetrics(parseCsvLine(line), headerIndex);
+                if (metrics == null) {
                     continue;
                 }
 
-                ValuationMetrics metrics = new ValuationMetrics(
-                        columns.get(0),
-                        columns.get(1),
-                        columns.get(2),
-                        columns.get(3),
-                        columns.get(4),
-                        columns.get(5),
-                        toDouble(columns.get(6)),
-                        toDouble(columns.get(7)),
-                        toDouble(columns.get(8)),
-                        toDouble(columns.get(9)),
-                        toDouble(columns.get(10)),
-                        toDouble(columns.get(11)),
-                        toDouble(columns.get(12)),
-                        toDouble(columns.get(13)),
-                        toDouble(columns.get(14)),
-                        toDouble(columns.get(15)),
-                        toDouble(columns.get(16)),
-                        toDouble(columns.get(17)),
-                        toDouble(columns.get(18)),
-                        toDouble(columns.get(19)),
-                        toDouble(columns.get(20)),
-                        toDouble(columns.get(21)),
-                        toDouble(columns.get(22)));
-                loadedHistory.computeIfAbsent(normalize(metrics.symbol()), ignored -> new ArrayList<>()).add(metrics);
+                String symbol = normalize(metrics.symbol());
+                loadedHistory.computeIfAbsent(symbol, ignored -> new LinkedHashMap<>())
+                        .put(metricsKey(metrics), metrics);
             }
         }
     }
 
-    private Comparator<ValuationMetrics> metricComparator() {
-        return Comparator.comparing(ValuationMetrics::year, Comparator.nullsLast(String::compareTo))
-                .thenComparing(ValuationMetrics::priceDate, Comparator.nullsLast(String::compareTo))
-                .reversed();
+    private List<CsvSource> findCsvSources() throws IOException {
+        List<CsvSource> sources = new ArrayList<>();
+        ClassPathResource resource = new ClassPathResource(CSV_PATH);
+        if (resource.exists()) {
+            sources.add(new ClassPathCsvSource(resource));
+        }
+
+        for (Path processedPath : WORKSPACE_PROCESSED_PATHS) {
+            if (Files.exists(processedPath)) {
+                try (Stream<Path> paths = Files.walk(processedPath, 3)) {
+                    paths.filter(path -> path.getFileName().toString().equals("valuation_metrics.csv"))
+                            .sorted(Comparator
+                                    .comparing((Path path) -> isGeneralPath(path) ? 0 : 1)
+                                    .thenComparing(Path::toString))
+                            .map(FileCsvSource::new)
+                            .forEach(sources::add);
+                }
+            }
+        }
+
+        return sources;
+    }
+
+    private ValuationMetrics toMetrics(List<String> columns, Map<String, Integer> headerIndex) {
+        String symbol = value(columns, headerIndex, "symbol");
+        if (symbol == null || symbol.isBlank()) {
+            return null;
+        }
+
+        return new ValuationMetrics(
+                symbol,
+                value(columns, headerIndex, "corpCode", "corp_code"),
+                value(columns, headerIndex, "name"),
+                value(columns, headerIndex, "year"),
+                value(columns, headerIndex, "fiscal_date", "fiscalDate"),
+                value(columns, headerIndex, "price_date", "priceDate"),
+                toDouble(value(columns, headerIndex, "price")),
+                toDouble(value(columns, headerIndex, "market_cap", "marketCap")),
+                toDouble(value(columns, headerIndex, "total_assets", "totalAssets")),
+                toDouble(value(columns, headerIndex, "total_liabilities", "totalLiabilities")),
+                toDouble(value(columns, headerIndex, "total_equity", "totalEquity")),
+                toDouble(value(columns, headerIndex, "net_income", "netIncome")),
+                toDouble(value(columns, headerIndex, "operating_income", "operatingIncome")),
+                toDouble(value(columns, headerIndex, "revenue")),
+                toDouble(value(columns, headerIndex, "per")),
+                toDouble(value(columns, headerIndex, "pbr")),
+                toDouble(value(columns, headerIndex, "roe")),
+                toDouble(value(columns, headerIndex, "debt_ratio", "debtRatio")),
+                toDouble(value(columns, headerIndex, "per_score", "perScore")),
+                toDouble(value(columns, headerIndex, "pbr_score", "pbrScore")),
+                toDouble(value(columns, headerIndex, "roe_score", "roeScore")),
+                toDouble(value(columns, headerIndex, "debt_score", "debtScore")),
+                toDouble(value(columns, headerIndex, "valuation_score", "valuationScore")));
+    }
+
+    private Map<String, Integer> toHeaderIndex(List<String> headers) {
+        Map<String, Integer> headerIndex = new HashMap<>();
+        for (int index = 0; index < headers.size(); index++) {
+            headerIndex.put(normalizeHeader(headers.get(index)), index);
+        }
+
+        return headerIndex;
+    }
+
+    private String value(List<String> columns, Map<String, Integer> headerIndex, String... names) {
+        for (String name : names) {
+            Integer index = headerIndex.get(normalizeHeader(name));
+            if (index != null && index < columns.size()) {
+                return columns.get(index).trim();
+            }
+        }
+
+        return null;
+    }
+
+    private String normalizeHeader(String value) {
+        return value == null ? "" : value.trim().replace("\uFEFF", "");
     }
 
     private Double toDouble(String value) {
@@ -165,6 +196,18 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replaceFirst("\\.0$", "");
+    }
+
+    private String metricsKey(ValuationMetrics metrics) {
+        return String.join("|",
+                normalize(metrics.symbol()),
+                metrics.year() == null ? "" : metrics.year(),
+                metrics.fiscalDate() == null ? "" : metrics.fiscalDate(),
+                metrics.priceDate() == null ? "" : metrics.priceDate());
+    }
+
+    private boolean isGeneralPath(Path path) {
+        return path.toString().replace('\\', '/').contains("/general/");
     }
 
     private List<String> parseCsvLine(String line) {
@@ -191,5 +234,23 @@ public class CsvValuationMetricsRepository implements ValuationMetricsRepository
 
         columns.add(current.toString());
         return columns;
+    }
+
+    private interface CsvSource {
+        InputStream open() throws IOException;
+    }
+
+    private record ClassPathCsvSource(ClassPathResource resource) implements CsvSource {
+        @Override
+        public InputStream open() throws IOException {
+            return resource.getInputStream();
+        }
+    }
+
+    private record FileCsvSource(Path path) implements CsvSource {
+        @Override
+        public InputStream open() throws IOException {
+            return Files.newInputStream(path);
+        }
     }
 }

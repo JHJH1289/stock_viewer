@@ -120,68 +120,45 @@ def normalize_component(score_25: int | float) -> float:
     return float(score_25) * 4.0
 
 
-def score_per(per: float) -> int:
+def interpolate_score(value: float, points: list[tuple[float, float]]) -> float:
+    """기준점 사이를 선형 보간해 계단형이 아닌 연속 점수로 환산."""
+    if pd.isna(value):
+        return 0.0
+    if value <= points[0][0]:
+        return points[0][1]
+    for (left_value, left_score), (right_value, right_score) in zip(points, points[1:]):
+        if value <= right_value:
+            ratio = (value - left_value) / (right_value - left_value)
+            return left_score + ratio * (right_score - left_score)
+    return points[-1][1]
+
+
+def score_per(per: float) -> float:
     """PER 절대점수. 낮을수록 좋고 적자/음수/결측은 0점."""
     if pd.isna(per) or per <= 0:
-        return 0
-    if per <= 5:
-        return 25
-    if per <= 10:
-        return 20
-    if per <= 15:
-        return 15
-    if per <= 20:
-        return 10
-    if per <= 30:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(per, [(5, 25), (10, 20), (15, 15), (20, 10), (30, 5), (40, 0)])
 
 
-def score_pbr(pbr: float) -> int:
+def score_pbr(pbr: float) -> float:
     """PBR 절대점수. 낮을수록 좋고 자본잠식/음수/결측은 0점."""
     if pd.isna(pbr) or pbr <= 0:
-        return 0
-    if pbr <= 0.5:
-        return 25
-    if pbr <= 1:
-        return 20
-    if pbr <= 1.5:
-        return 15
-    if pbr <= 2:
-        return 10
-    if pbr <= 3:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(pbr, [(0.5, 25), (1, 20), (1.5, 15), (2, 10), (3, 5), (5, 0)])
 
 
-def score_roe(roe: float) -> int:
+def score_roe(roe: float) -> float:
     """ROE 절대점수. 높을수록 좋음."""
     if pd.isna(roe):
-        return 0
-    if roe >= 15:
-        return 25
-    if roe >= 10:
-        return 20
-    if roe >= 5:
-        return 15
-    if roe > 0:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(roe, [(0, 0), (5, 15), (10, 20), (15, 25)])
 
 
-def score_debt_ratio(debt_ratio: float) -> int:
+def score_debt_ratio(debt_ratio: float) -> float:
     """부채비율 절대점수. 낮을수록 좋음."""
     if pd.isna(debt_ratio) or debt_ratio < 0:
-        return 0
-    if debt_ratio <= 100:
-        return 25
-    if debt_ratio <= 150:
-        return 15
-    if debt_ratio <= 200:
-        return 10
-    if debt_ratio <= 300:
-        return 5
-    return 0
+        return 0.0
+    return interpolate_score(debt_ratio, [(100, 25), (150, 15), (200, 10), (300, 5), (500, 0)])
 
 
 def score_operating_margin(operating_margin: float) -> int:
@@ -316,7 +293,7 @@ def rank_score_within_group(df: pd.DataFrame, column: str, group_column: str, hi
         if n <= 1:
             continue
         values = df.loc[idx, column]
-        ascending = not higher_is_better
+        ascending = True
         ranks = values.rank(method="average", ascending=ascending)
         # 낮을수록 좋은 지표는 낮은 값이 100점, 높을수록 좋은 지표는 높은 값이 100점
         if higher_is_better:
@@ -357,7 +334,7 @@ def add_scores(df: pd.DataFrame) -> pd.DataFrame:
     out["roe_score"] = out["roe"].apply(score_roe)
     out["debt_score"] = out["debt_ratio"].apply(score_debt_ratio)
     out["operating_margin_score"] = out["operating_margin"].apply(score_operating_margin)
-    out["absolute_score"] = out[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1).astype(int)
+    out["absolute_score"] = out[["per_score", "pbr_score", "roe_score", "debt_score"]].sum(axis=1)
 
     # 절대점수를 0~100 컴포넌트로 환산해 업종 가중치용 보조점수 생성
     for source, target in [
@@ -416,8 +393,9 @@ def add_scores(df: pd.DataFrame) -> pd.DataFrame:
         out["industry_adjusted_score_before_penalty"] - out["risk_penalty"]
     ).clip(lower=0, upper=100).round(0).astype(int)
 
-    # valuation_score는 업종 가중 상대평가 점수
-    out["valuation_score"] = out["industry_adjusted_score"]
+    # 화면의 가치 점수는 사용자가 보는 4개 기본 지표 점수의 합계로 통일합니다.
+    # 업종/동종업계 보정 점수는 industry_adjusted_score에 참고용으로 유지합니다.
+    out["valuation_score"] = out["absolute_score"].round(2)
     return out
 
 
@@ -509,6 +487,12 @@ def main() -> int:
         "operating_margin_vs_peer_pctp",
         "weighted_absolute_score",
         "industry_adjusted_score_before_penalty",
+        "per_score",
+        "pbr_score",
+        "roe_score",
+        "debt_score",
+        "operating_margin_score",
+        "absolute_score",
         "per_peer_score",
         "pbr_peer_score",
         "roe_peer_score",
